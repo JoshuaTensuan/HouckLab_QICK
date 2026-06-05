@@ -86,7 +86,19 @@ class ModifiedRamseyProgram(AveragerProgram):
         self.r_thresh = 5  # holds the single-shot discrimination threshold
 
         self.use_active_reset = cfg.get("use_active_reset", False)
+        # Feedback reset that reuses the FINAL Ramsey readout as the conditioning
+        # measurement, instead of firing a dedicated reset readout at the start of
+        # the shot. After the Ramsey readout we read back its accumulated I and
+        # conditionally apply a corrective pi, leaving the qubit in |g> for the
+        # next shot. Mutually exclusive with the start-of-shot active reset: when
+        # this is on, active_reset_to_g() is disabled (so there is exactly ONE
+        # readout per rep, which is also the kept data point). See body().
+        self.reset_from_ramsey_readout = cfg.get("reset_from_ramsey_readout", False)
+        if self.reset_from_ramsey_readout:
+            self.use_active_reset = False
         self.reset_cycles = int(cfg.get("reset_cycles", 1)) if self.use_active_reset else 0
+        # Either feedback path needs the discrimination threshold + skip test.
+        self.needs_feedback = self.use_active_reset or self.reset_from_ramsey_readout
         # condj jumps (skips the corrective pi) when the qubit is already in |g>.
         # If |g> sits below threshold in I, the "already ground" test is I < thresh.
         self.reset_skip_op = "<" if cfg.get("reset_ground_below_threshold", True) else ">"
@@ -101,9 +113,20 @@ class ModifiedRamseyProgram(AveragerProgram):
         # the upper peak, so f_avg = f_ge - df/2. Both branches are then detuned by
         # +/- df/2 and rotate +/- 90 deg during tau.
         self.symmetric_ramsey = cfg.get("symmetric_ramsey", False)
-        self.drive_freq_mhz = (
-            cfg["f_ge"] - cfg["df"] / 2.0 if self.symmetric_ramsey else cfg["f_ge"]
-        )
+        # In symmetric mode the drive sits at the center of the two parity branches
+        # (the charge-dispersion midpoint). By default this is f_ge - df/2 (f_ge =
+        # upper peak); cfg["symmetric_drive_freq"] (MHz), if set, pins the drive to
+        # an explicitly measured center instead. df (hence tau and the pi relative
+        # phase between branches) is unaffected -- only the common-mode drive moves.
+        sym_center = cfg.get("symmetric_drive_freq", None)
+        if self.symmetric_ramsey:
+            self.drive_freq_mhz = (
+                float(sym_center)
+                if sym_center is not None
+                else cfg["f_ge"] - cfg["df"] / 2.0
+            )
+        else:
+            self.drive_freq_mhz = cfg["f_ge"]
 
         # Closing-pi/2 phase sets the parity -> computational-state mapping. Base
         # phase is 180 deg (standard, undoes the first pi/2) or 90 deg (symmetric).
@@ -167,16 +190,17 @@ class ModifiedRamseyProgram(AveragerProgram):
             length=self.us2cycles(cfg["length"])
         )
 
-        if self.use_active_reset:
+        if self.needs_feedback:
             if "readout_threshold" not in cfg:
                 raise KeyError(
-                    "use_active_reset=True requires cfg['readout_threshold'] "
-                    "(single-shot I threshold, normalized units)."
+                    "active reset / reset_from_ramsey_readout requires "
+                    "cfg['readout_threshold'] (single-shot I threshold, "
+                    "normalized units)."
                 )
             if "pi_gain" not in cfg:
                 raise KeyError(
-                    "use_active_reset=True requires cfg['pi_gain'] for the "
-                    "corrective reset flip."
+                    "active reset / reset_from_ramsey_readout requires "
+                    "cfg['pi_gain'] for the corrective reset flip."
                 )
             # collect_shots() divides the accumulated I by the readout-window
             # length, so the threshold the user reads off the IQ plot is in those
@@ -185,6 +209,17 @@ class ModifiedRamseyProgram(AveragerProgram):
             ro_norm = self.us2cycles(cfg["readout_length"], ro_ch=0)
             raw_threshold = int(round(cfg["readout_threshold"] * ro_norm))
             self.regwi(self.q_rp, self.r_thresh, raw_threshold)
+            # DIAGNOSTIC: shows the exact feedback decision. The corrective pi is
+            # SKIPPED when (r_read reset_skip_op r_thresh) is true; for a correct
+            # reset this must skip when the qubit is in |g>. Cross-check skip_op
+            # against the measured g_I/e_I from calibrate_active_reset_readout.
+            print(
+                f"[ModifiedRamsey reset cfg] reset_ground_below_threshold="
+                f"{cfg.get('reset_ground_below_threshold', True)}, skip_op='"
+                f"{self.reset_skip_op}', readout_threshold(norm)="
+                f"{cfg['readout_threshold']:.6f}, raw_threshold(reg)={raw_threshold} "
+                f"(skip the pi when r_read {self.reset_skip_op} {raw_threshold})"
+            )
 
         self.sync_all(self.us2cycles(0.2))
 
@@ -237,6 +272,43 @@ class ModifiedRamseyProgram(AveragerProgram):
         if self.reset_cycles:
             self.sync_all(self.us2cycles(cfg.get("post_reset_wait", 0.0)))
 
+    def reset_after_readout(self):
+        """
+        Conditional reset that reuses the FINAL Ramsey readout as the conditioning
+        measurement (no extra readout is fired).
+
+        Assumes body() has just performed the Ramsey readout with wait=True, so the
+        readout accumulator holds this shot's in-phase (I) value. We read it back
+        and apply a corrective pi ONLY if the qubit was found in |e>, leaving the
+        qubit in |g> for the next shot. The Ramsey readout itself remains the
+        single kept data point per rep (collect_shots takes the final readout).
+        """
+        cfg = self.cfg
+        ro_ch = cfg["ro_chs"][0]
+        done_label = "RAMSEY_RESET_DONE"
+
+        # Read the accumulated in-phase value (lower = I) from the Ramsey readout.
+        self.read(ro_ch, self.q_rp, "lower", self.r_read)
+
+        # If already in |g>, skip the corrective pi. Otherwise flip e -> g.
+        self.condj(self.q_rp, self.r_read, self.reset_skip_op,
+                   self.r_thresh, done_label)
+
+        self.set_pulse_registers(
+            ch=cfg["qubit_ch"],
+            style="arb",
+            freq=self.f_ge_reg,
+            phase=0,
+            gain=cfg["pi_gain"],
+            waveform="qubit"
+        )
+        self.pulse(ch=cfg["qubit_ch"])
+
+        # Label before the sync so timing reconverges on both branches (whether or
+        # not the corrective pi played).
+        self.label(done_label)
+        self.sync_all(self.us2cycles(cfg.get("post_reset_wait", 0.0)))
+
     def body(self):
         cfg = self.cfg
 
@@ -287,14 +359,27 @@ class ModifiedRamseyProgram(AveragerProgram):
         self.pulse(ch=cfg["qubit_ch"])
         self.sync_all(self.us2cycles(0.05))
 
-        # Readout with no relax delay.
+        # Readout. Normally no relax delay (syncdelay=0). With
+        # reset_from_ramsey_readout the same readout also conditions the corrective
+        # pi, so let the resonator ring down (reset_readout_relax_delay) before the
+        # conditional flip.
+        final_syncdelay = (
+            self.us2cycles(cfg.get("reset_readout_relax_delay", 1.0))
+            if self.reset_from_ramsey_readout else 0
+        )
         self.measure(
             pulse_ch=cfg["res_ch"],
             adcs=self.ro_chs,
             adc_trig_offset=self.us2cycles(cfg["adc_trig_offset"]),
             wait=True,
-            syncdelay=0
+            syncdelay=final_syncdelay
         )
+
+        # Feedback reset off the Ramsey readout: conditionally flip e->g so the
+        # next shot starts in |g>. Runs AFTER the readout, so the kept data point
+        # (the Ramsey readout) is unaffected.
+        if self.reset_from_ramsey_readout:
+            self.reset_after_readout()
 
     def acquire(self, soc, threshold=None, angle=None, load_pulses=True,
                 readouts_per_experiment=None, save_experiments=None,
@@ -371,11 +456,23 @@ class ModifiedRamsey(ExperimentClass):
                     + (180 if self.cfg.get("flip_final_pi2", False) else 0)
                 ) % 360,
                 'drive_freq': (
-                    self.cfg["f_ge"] - self.cfg["df"] / 2.0
+                    (
+                        float(self.cfg["symmetric_drive_freq"])
+                        if self.cfg.get("symmetric_drive_freq", None) is not None
+                        else self.cfg["f_ge"] - self.cfg["df"] / 2.0
+                    )
                     if self.cfg.get("symmetric_ramsey", False)
                     else self.cfg["f_ge"]
                 ),
+                'symmetric_drive_freq': (
+                    float(self.cfg["symmetric_drive_freq"])
+                    if self.cfg.get("symmetric_drive_freq", None) is not None
+                    else np.nan
+                ),
                 'use_active_reset': self.cfg.get("use_active_reset", False),
+                'reset_from_ramsey_readout': self.cfg.get(
+                    "reset_from_ramsey_readout", False
+                ),
                 'reset_cycles': (
                     int(self.cfg.get("reset_cycles", 1))
                     if self.cfg.get("use_active_reset", False) else 0
@@ -401,8 +498,10 @@ class ModifiedRamsey(ExperimentClass):
 
         seq_label = "echo pi" if use_pi_pulse else "no pi"
 
+        iq_alpha = data.get('config', {}).get('iq_plot_alpha', 0.4)
+
         fig = plt.figure(figNum)
-        plt.plot(shots_i, shots_q, '.', alpha=0.4, markersize=3)
+        plt.plot(shots_i, shots_q, '.', alpha=iq_alpha, markersize=3)
         plt.xlabel("I (a.u.)")
         plt.ylabel("Q (a.u.)")
         plt.axis('equal')

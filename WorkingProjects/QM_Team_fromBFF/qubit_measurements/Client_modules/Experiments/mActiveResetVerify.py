@@ -130,6 +130,18 @@ class ActiveResetVerifyProgram(AveragerProgram):
             ro_norm = self.us2cycles(cfg["readout_length"], ro_ch=0)
             raw_threshold = int(round(cfg["readout_threshold"] * ro_norm))
             self.regwi(self.q_rp, self.r_thresh, raw_threshold)
+            # DIAGNOSTIC: shows the exact decision the reset will make. The corrective
+            # pi is SKIPPED when (r_read reset_skip_op r_thresh) is true. For a correct
+            # reset this must skip when the qubit is in |g>. Cross-check against the
+            # measured g_I/e_I printed by calibrate_active_reset_readout.
+            print(
+                f"[ActiveResetVerify reset cfg] reset_ground_below_threshold="
+                f"{cfg.get('reset_ground_below_threshold', True)}, skip_op='"
+                f"{self.reset_skip_op}', readout_threshold(norm)="
+                f"{cfg['readout_threshold']:.6f}, raw_threshold(reg)={raw_threshold}, "
+                f"reset_cycles={self.reset_cycles} "
+                f"(skip the pi when r_read {self.reset_skip_op} {raw_threshold})"
+            )
 
         self.sync_all(self.us2cycles(0.2))
 

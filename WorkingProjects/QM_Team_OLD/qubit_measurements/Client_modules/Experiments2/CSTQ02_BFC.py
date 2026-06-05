@@ -1,68 +1,59 @@
 # os.add_dll_directory(os.getcwd() + '\\PythonDrivers')
 # os.add_dll_directory(os.getcwd() + '.\..\\')
-# Select the interactive Qt backend (PyQt6) BEFORE pyplot is first imported
-# (which happens inside `from utils import *` below). Required for the
-# non-blocking live two-tone display (ModifiedRamsey_params["live_display"]).
-import matplotlib
-
-matplotlib.use("QtAgg")
 from utils import *
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Calib.initialize4Q import *
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.CoreLib.socProxy import *
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Calib.initialize4Q import *
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.CoreLib.socProxy import *
 import time
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mTransmissionFF import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mTransmissionFF import (
     CavitySpecFF,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mSingleTone import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mSingleTone import (
     SingleTone,
 )
 
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mSpecSliceFF import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mSpecSliceFF import (
     QubitSpecSliceFF,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mChargeDispersionQuasiCW import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mChargeDispersionQuasiCW import (
     ChargeDispersionQuasiCW,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mAmplitudeRabiFF import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mAmplitudeRabiFF import (
     AmplitudeRabiFF,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mAmplitudeRabiFF_noUpdate import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mAmplitudeRabiFF_noUpdate import (
     AmplitudeRabiFF_N,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mChiShift import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mChiShift import (
     ChiShift,
 )
 
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mT1FF import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mT1FF import (
     T1FF,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mT2R import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mT2R import (
     T2R,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mT2EFF import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mT2EFF import (
     T2EMUX,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mSingleShotProgramFFMUX import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mSingleShotProgramFFMUX import (
     SingleShotProgramFFMUX,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mT1_SS import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mT1_SS import (
     T1_SS,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mOptimizeReadoutandPulse_FF import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mOptimizeReadoutandPulse_FF import (
     ReadOpt_wSingleShotFF,
     QubitPulseOpt_wSingleShotFF,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mConstantTwoTone import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mConstantTwoTone import (
     ConstantTwoTone,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mChargeDispersion import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mChargeDispersion import (
     ChargeDispersion,
 )
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mModifiedRamsey import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mModifiedRamsey import (
     ModifiedRamsey,
-)
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mActiveResetVerify import (
-    ActiveResetVerify,
 )
 import numpy as np
 import matplotlib.pyplot as plt
@@ -73,28 +64,10 @@ from datetime import datetime
 import matplotlib.dates as mdates
 import json
 from sklearn.cluster import KMeans
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mAutoCoherence import (
+from WorkingProjects.QM_Team_OLD.qubit_measurements.Client_modules.Experiments2.mAutoCoherence import (
     run_auto_coherence,
     AUTO_COHERENCE_PARAMS,
     find_sweet_spot,
-)
-
-# Zero-span charge-parity switching measurement (device-agnostic acquisition +
-# offline analysis). pick_parity_drive_freq / chunked_acquire / ramp_to come in
-# via `from utils import *` above.
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.mZeroSpanParity import (
-    ZeroSpanParity,
-)
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.analyze_ZeroSpanParity import (
-    analyze_parity_run,
-)
-from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experiments.validate_ZeroSpanParity import (
-    run_static_contrast,
-    run_contrast_vs_qubit_freq,
-    run_modulation_check,
-    run_control_suite,
-    run_environment_sweep,
-    build_evidence_report,
 )
 
 
@@ -197,279 +170,161 @@ def get_apriori_separator_from_singleshot(config, soc, soccfg, outerFolder):
     }
 
 
-def calibrate_active_reset_readout(
-    config, soc, soccfg, outerFolder, max_align_iter=2, align_tol_frac=0.1
-):
-    """
-    Calibrate the readout phase + single-shot I-threshold for hardware active reset.
-
-    The active-reset feedback (ModifiedRamsey / ActiveResetVerify) thresholds on the
-    RAW in-phase (I) value only, so |g> and |e> must separate ALONG I. This:
-      1) runs a SingleShot g/e calibration at the current res_phase,
-      2) rotates config["res_phase"] so the g->e axis lands on +I,
-      3) RE-MEASURES and reads the I-threshold directly off the rotated blobs
-         (so the deg2reg sign convention is never trusted — the result is measured).
-
-    Mutates config["res_phase"] in place. Returns dict:
-      res_phase, readout_threshold, reset_ground_below_threshold,
-      g_center, e_center  (rotated-frame, normalized collect_shots() units).
-    """
-    res_ch = config["res_ch"]
-
-    sep = get_apriori_separator_from_singleshot(
-        config=config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
-    )
-    n0 = np.asarray(sep["e_center"]) - np.asarray(sep["g_center"])
-    phi_deg = float(np.degrees(np.arctan2(n0[1], n0[0])))
-    base_phase = int(config.get("res_phase", 0))
-
-    print(
-        f"[ActiveReset calib] g->e axis at {phi_deg:.2f} deg; rotating res_phase "
-        f"to put it on I."
-    )
-
-    # Try rotating by -phi (align g->e with +I); if the sign convention flips it,
-    # fall back to +phi. Keep whichever leaves the smallest |Q separation|.
-    best = None
-    for sign in (-1.0, +1.0):
-        config["res_phase"] = int(
-            base_phase + soccfg.deg2reg(sign * phi_deg, gen_ch=res_ch)
-        )
-        sep_r = get_apriori_separator_from_singleshot(
-            config=config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
-        )
-        gr = np.asarray(sep_r["g_center"])
-        er = np.asarray(sep_r["e_center"])
-        nr = er - gr
-        i_sep, q_sep = abs(nr[0]), abs(nr[1])
-        if best is None or q_sep < best["q_sep"]:
-            best = {
-                "res_phase": config["res_phase"],
-                "g": gr,
-                "e": er,
-                "i_sep": i_sep,
-                "q_sep": q_sep,
-            }
-        if q_sep <= align_tol_frac * i_sep:
-            break
-
-    config["res_phase"] = best["res_phase"]
-    gr, er = best["g"], best["e"]
-    if best["q_sep"] > align_tol_frac * best["i_sep"]:
-        print(
-            f"[ActiveReset calib] WARNING: residual Q separation {best['q_sep']:.4f} "
-            f"vs I separation {best['i_sep']:.4f}; reset thresholding on I may be "
-            f"degraded. Improve the SingleShot fidelity or rotate manually."
-        )
-
-    readout_threshold = 0.5 * (gr[0] + er[0])
-    reset_ground_below = bool(gr[0] < er[0])
-    print(
-        f"[ActiveReset calib] res_phase={best['res_phase']} (reg units), "
-        f"readout_threshold={readout_threshold:.6f}, "
-        f"reset_ground_below_threshold={reset_ground_below} "
-        f"(g_I={gr[0]:.4f}, e_I={er[0]:.4f})"
-    )
-
-    return {
-        "res_phase": best["res_phase"],
-        "readout_threshold": float(readout_threshold),
-        "reset_ground_below_threshold": reset_ground_below,
-        "g_center": gr,
-        "e_center": er,
-    }
-
-
-def wire_reset_into_mr_cfg(
-    mr_cfg, apriori_sep, mr_params, use_active_reset, reset_from_readout
-):
-    """
-    Wire the chosen feedback-reset strategy + I-threshold into mr_cfg, in place.
-
-    Both strategies threshold on the raw in-phase (I) value, so this derives the
-    threshold (and the |g>-below-threshold sign) from the apriori SingleShot
-    separator. reset_from_readout TAKES PRECEDENCE over use_active_reset: when it
-    is set, the single-readout feedback reset is selected and the start-of-shot
-    active reset is left off. Idempotent, so it is safe to re-call on ss_cal
-    refreshes to update only the (drifting) threshold.
-    """
-    if not (use_active_reset or reset_from_readout):
-        return
-    g = np.asarray(apriori_sep["g_center"])
-    e = np.asarray(apriori_sep["e_center"])
-    mr_cfg["readout_threshold"] = float(0.5 * (g[0] + e[0]))
-    mr_cfg["reset_ground_below_threshold"] = bool(g[0] < e[0])
-    mr_cfg["reset_readout_relax_delay"] = mr_params.get(
-        "reset_readout_relax_delay", 1.0
-    )
-    mr_cfg["post_reset_wait"] = mr_params.get("post_reset_wait", 0.0)
-    if reset_from_readout:
-        mr_cfg["reset_from_ramsey_readout"] = True
-    else:
-        mr_cfg["use_active_reset"] = True
-        mr_cfg["reset_cycles"] = int(mr_params.get("reset_cycles", 1))
-
-
 # from q4diamond.Client_modules.Experiment_Scripts.mT2R import T2R
 # from q4diamond.Client_modules.Experiment_Scripts.mChiShift import ChiShift
 # from q4diamond.Client_modules.Experiment_Scripts.mSingleShotProgramFF import SingleShotProgramFF
 # from q4diamond.Client_modules.Experiment_Scripts.mOptimizeReadoutandPulse_FF import ReadOpt_wSingleShotFF, QubitPulseOpt_wSingleShotFF
 
-soc, soccfg = makeProxy_RFSOC_147()
+soc, soccfg = makeProxy()
 
-# ── Output folder root — EDIT THIS before running (placeholder) ─────────────
-# Per-qubit data folders are built below as f"{_QubitFolderRoot}/Q{q}//".
-_QubitFolderRoot = "Z:/t1Team/Data/2026-05-18_BFE_cooldown/TATQ01-charge/RFSOC"
-QubitFolders = {str(q): f"{_QubitFolderRoot}/Q{q}//" for q in range(1, 7)}
+"""
+'4': {'Readout': {'Frequency': 7288.505, 'Gain': 1400}, # 1500 is too high # 1250
+          'Qubit': {'Frequency': 2306.3, 'Gain': 26060,  "pi2_Gain": 26060 // 2,"sigma": 0.06, "flattop_length": None}, 
+          'outerfoldername':"V:/t1Team/Data/2026-3-9_BFC_Cooldown/CSTQ02/RFSOC/Q4//"},
+^ with Q4 charge line 
+"""
 
-############## TATQ01-CL01-KOH (ported from CSTQ03_BFC.py) ##################
-# Readout/Qubit frequencies, gains, sigma, flattop taken verbatim from the
-# active block of T1_T2E_sweep_TATQ01.py (device TATQ01-CL01-KOH).
-# pi2_Gain added as Gain//2 per qubit — PLACEHOLDER; retune the pi/2 pulse
-# (AmplitudeRabi / SingleShot_QubitOptimize) before trusting Ramsey results.
+temp_dir_Q4 = (
+    "C:/Users/ece-houck-j409/Documents/Data/2026-3-9_BC_Cooldown/CSTQ02/RFSOC/Q4//"
+)
+############## New TATQ03 (No Charge Lines) ############################
 Qubit_Parameters = {
     "1": {
-        "Readout": {"Frequency": 6582.381, "Gain": 2500},
+        "Readout": {
+            "Frequency": 6757.94,
+            "Gain": 200,
+        },  # 500 okay, 700 too much 520 maybe too much 530 too much
         "Qubit": {
-            "Frequency": 2550.30,
-            "Gain": 8000,
-            "pi2_Gain": 8000 // 2,
-            "sigma": 1,
-            "flattop_length": 1,
+            "Frequency": 1752,
+            "Gain": 5000,
+            "pi2_Gain": 3975 // 2,
+            "sigma": 0.2,
+            "flattop_length": None,
         },
-        "outerfoldername": QubitFolders["1"],
+        "outerfoldername": "Z:/t1Team/Data/2026-05-18_BFE_cooldown/TATQ01-CL01-KOH/RFSOC/Q2/",
     },
     "2": {
-        "Readout": {"Frequency": 6673.27, "Gain": 2500},
+        "Readout": {
+            "Frequency": 7192.01,
+            "Gain": 4000,
+        },  # coarsely tuned to 4000, seeing behavior at 4500
         "Qubit": {
-            "Frequency": 2847.2942,
-            # "Gain": 5633,
-            # "pi2_Gain": 5633 // 2,
-            # "sigma": 2,
-            # "flattop_length": None,
-            "Gain": 26730,
-            "pi2_Gain": 26730 // 2,
-            "sigma": 0.7,
-            "flattop_length": None,
-        },
-        "outerfoldername": QubitFolders["2"],
-    },
-    "3": {
-        "Readout": {"Frequency": 6792.4, "Gain": 4000},
-        "Qubit": {
-            "Frequency": 3130.44,
-            "Gain": 2060,
-            "pi2_Gain": 2060 // 2,
+            "Frequency": 3052.389307,
+            "Gain": 2055,
+            "pi2_Gain": 2055 // 2,
             "sigma": 1,
             "flattop_length": None,
-        },
-        "outerfoldername": QubitFolders["3"],
+        },  # qubit, T1 found
+        "outerfoldername": "Z:/t1Team/Data/2026-3-9_BFC_Cooldown/CSTQ02/RFSOC/Q2//",
+    },
+    "3": {
+        "Readout": {"Frequency": 6879.490105, "Gain": 550},  # 600 too much
+        "Qubit": {
+            "Frequency": 1746,
+            "Gain": 5000,
+            "pi2_Gain": 3975 // 2,
+            "sigma": 1,
+            "flattop_length": 1,
+        },  # qubit found 1719.8273
+        "outerfoldername": "Z:/t1Team/Data/2026-3-9_BFC_Cooldown/CSTQ02/RFSOC/Q3//",
     },
     "4": {
-        "Readout": {"Frequency": 6882.394, "Gain": 4000},
+        "Readout": {
+            "Frequency": 7288.48,
+            "Gain": 1180,
+        },  # 7288.48 1180 400 good, 420 too much i think 600 too much. with directional coupler: 1400 good 1500maybe too much
         "Qubit": {
-            "Frequency": 3335.20,
-            "Gain": 8000,
-            "pi2_Gain": 8000 // 2,
-            "sigma": 2,
+            "Frequency": 2306.308975,
+            "Gain": 7009,
+            "pi2_Gain": 7009 // 2,
+            "sigma": 0.22,
             "flattop_length": None,
-        },
-        "outerfoldername": QubitFolders["4"],
+        },  # qubit, 7468 was the previous pi pulse with sigma = 0.15, 5396 0.225 6435 2603.33 used for ramsey 7009 // 2
+        "outerfoldername": "Z:/t1Team/Data/2026-3-9_BFC_Cooldown/CSTQ02/RFSOC/Q4//",
     },
     "5": {
-        "Readout": {"Frequency": 6992.13, "Gain": 2500},
+        "Readout": {
+            "Frequency": 6970.59,
+            "Gain": 1500,
+        },  # 4500 with directional coupler 1500 good without-
         "Qubit": {
-            "Frequency": 3293.7,
-            "Gain": 1000,
-            "pi2_Gain": 1000 // 2,
-            "sigma": 0.01,
-            "flattop_length": None,
-        },
-        "outerfoldername": QubitFolders["5"],
-    },
-    "6": {
-        "Readout": {"Frequency": 7066.9, "Gain": 2000},
-        "Qubit": {
-            "Frequency": 3593.99,
+            "Frequency": 2758.3,
             "Gain": 4000,
             "pi2_Gain": 4000 // 2,
-            "sigma": 0.15,
+            "sigma": 1,
             "flattop_length": None,
-        },
-        "outerfoldername": QubitFolders["6"],
+        },  # 2756.685
+        "outerfoldername": "Z:/t1Team/Data/2026-3-9_BFC_Cooldown/CSTQ02/RFSOC/Q5//",
+    },  # qubit, T1 found
+    "6": {
+        "Readout": {"Frequency": 7070.917614, "Gain": 390},  # 390 good 550 750 too much
+        "Qubit": {
+            "Frequency": 2100.3,
+            "Gain": 5000,
+            "pi2_Gain": 3975 // 2,
+            "sigma": 1,
+            "flattop_length": 1,
+        },  # cant find
+        "outerfoldername": "Z:/t1Team/Data/2026-3-9_BFC_Cooldown/CSTQ02/RFSOC/Q6//",
     },
 }
-############################################################################
+############## End Can D ############################
 # yoko
 start_voltage = (
     0.000  # sets voltage for the entire experiment #0.0059 working for good T2Rs
 )
 
-rm = pyvisa.ResourceManager()
-yoko = rm.open_resource(
-    "GPIB2::11::INSTR"
-)  # TODO(BFE): verify GPIB address for this setup's Yokogawa charge source
-# yoko.write("*RST")
-yoko.write(":SOUR:FUNC VOLT")
-yoko.write(":OUTP ON")
-ramp_to(yoko, start_voltage)
+# rm = pyvisa.ResourceManager()
+# yoko = rm.open_resource("GPIB1::9::INSTR")
+# # yoko.write("*RST")
+# yoko.write(":SOUR:FUNC VOLT")
+# yoko.write(":OUTP ON")
+# ramp_to(yoko, start_voltage)
 
-yoko_fixed = (
-    False  # during a charge sweep; lazy way of sweeping two tone spec over time
-)
+# yoko_fixed = (
+#     False  # during a charge sweep; lazy way of sweeping two tone spec over time
+# )
 
 # Readout
 
-Qubit_Readout = 2
-Qubit_Pulse = 2
+Qubit_Readout = 6
+Qubit_Pulse = 6
 outerFolder = Qubit_Parameters[str(Qubit_Readout)]["outerfoldername"]
 
-Constant2Tone = False
+Constant2Tone = True
 tl = {"tone_length": 151}
 ConstantTone = False  # determine cavity frequency
 
 RunTransmissionSweep = False  # determine cavity frequency
-Transmission_params = {"reps": 10, "rounds": 10, "num_points": 101, "span": 5}
+Transmission_params = {"reps": 20, "rounds": 20, "num_points": 301, "span": 0.75}
 
 RunTransmissionSweeps = False
 ts = {"start_ts_gain": 500, "end_ts_gain": 8000, "ts_step": 500}
 
 Run2ToneSpec = False
-RunSpecGainLengthSweep = False  # nested gain × length sweep (see block below)
 RunTrans_QubitSpec = False
 RunChargeSweep = False
 charge_params = {
-    "voltage_start": 0.00,
-    "voltage_end": 0.03,
-    "voltage_step": 0.005,
+    "voltage_start": 0.0,
+    "voltage_end": 0.01,
+    "voltage_step": 0.0005,
 }  # 0.0001 has two periods in it
 Spec_relevant_params = {
-    # "qubit_gain": 100,
-    "qubit_gain": 100,
-    # "SpecSpan": 0.2,
-    "SpecSpan": 0.4,
-    # "SpecSpan": 0.25,
-    "SpecNumPoints": 201,  # 750 works Q5
-    "qubit_length": 22,  # length of 50flattop pulse when gauss = False # 9.5 worked
+    "qubit_gain": 750,
+    "SpecSpan": 20,
+    "SpecNumPoints": 101,  # 750 works Q5
+    "qubit_length": 100,  # length of 50flattop pulse when gauss = False # 9.5 worked
     "reps": 10,
     "rounds": 10,
-    "Gauss": False,
-    "sigma": 1,
-    "gain": 100,
-    # "gain": 150,
-    "relax_delay": 3000,  # us ≈ 3*T1 (T1 ≈ 5 ms) – thermalise between spec shots
+    "Gauss": True,
+    "sigma": 2,
+    "gain": 10000,
+    "relax_delay": 3500,
     "display": True,
     "min_sep_MHz": 0.2,
     "fit_window_mhz": 0.5,
-    "prominent_ratio": 0.1,  # 500 used for charge sweeps
-    # ── RunSpecGainLengthSweep controls ──────────────────────────────────
-    # sweep_gain_only=True  -> sweep only qubit_gain (qubit_length held fixed at
-    #                          the "qubit_length" value above).
-    # sweep_gain_only=False -> nested qubit_length × qubit_gain sweep.
-    "sweep_gain_only": True,
-    "sweep_lengths": list(range(1, 20, 10)),  # qubit_length values to sweep
-    "sweep_gains": list(range(1, 100, 10)),  # qubit_gain values to sweep
-}
+    "prominent_ratio": 0.1,
+}  # 500 used for charge sweeps
 
 StabilizeTwoTone = False
 
@@ -481,7 +336,7 @@ ChargeDispersion_params = {
     "upper_freq": 2306.567327,
     "lower_freq": 2306.032673,
     "probe_freq": 2306.567327,
-    "relax_delay": 15000,  # us ≈ 3*T1 (T1 ≈ 5 ms)
+    "relax_delay": 2000,
     "repetitions": 500,
 }
 
@@ -492,7 +347,7 @@ Run2ToneChargeDispersionQuasiCW = False  # new automated mode
 # f_ge is automatically set to the higher-frequency peak.
 # relax_delay must be set to >= 3-5 * T1 so the qubit thermalises between shots
 # (hardware active reset not available in AveragerProgram; thermal reset is sufficient).
-RunModifiedRamsey = True
+RunModifiedRamsey = False
 
 TwoToneChargeDispersion_params = {
     "df": 0.5,  # required peak separation in MHz
@@ -508,235 +363,46 @@ TwoToneChargeDispersion_params = {
     "SpecNumPoints": 101,
     "reps": 10,
     "rounds": 10,
-    "relax_delay": 15000,  # us ≈ 3*T1 (T1 ≈ 5 ms)
+    "relax_delay": 850,
     "Gauss": True,
     "sigma": 2,
     "gain": 500,
     "qubit_length": 2,
     # quasi-CW settings once the peaks are separated enough
     "qcw_repetitions": 1000,
-    "qcw_relax_delay": 15000,  # us ≈ 3*T1 (T1 ≈ 5 ms)
+    "qcw_relax_delay": 850,
 }
 
 ModifiedRamsey_params = {
     # --- two-tone search settings (same role as TwoToneChargeDispersion_params) ---
-    "df": 0.08,  # required peak separation in MHz before running Ramsey
-    "dV": 0.005,  # voltage step size [V]
+    "df": 0.5,  # required peak separation in MHz before running Ramsey
+    "dV": 0.0005,  # voltage step size [V]
     "voltage_min": 0.000,  # absolute lower voltage bound [V]
-    "voltage_max": 0.05,  # absolute upper voltage bound [V]
+    "voltage_max": 0.010,  # absolute upper voltage bound [V]
     "max_voltage_tries": 1000,  # max search steps per cycle
-    "num_cycles": 100000,  # how many search -> Ramsey cycles to run
-    "inter_cycle_delay": 10,  # wait [s] between consecutive cycles (0 = no wait)
+    "num_cycles": 1000,  # how many search -> Ramsey cycles to run
     "use_pi_pulse": False,
-    "center_peak_tol_mhz": 0.03,  # fix
-    "center_peak_df_for_tau": 0.15,  # fix
+    "center_peak_tol_mhz": 0.05,
+    "center_peak_df_for_tau": 0.5,
     "use_apriori_separator": True,
     "ss_calib_shots": 1000,
     "ss_recalib_every_n_cycles": 10,
     # two-tone spec settings used during the voltage search
-    "SpecSpan": 0.125,
-    "SpecNumPoints": 101,
+    "SpecSpan": 1.0,
+    "SpecNumPoints": 201,
     "reps": 10,
     "rounds": 10,
-    "relax_delay": 3000,  # us ≈ 3*T1 (T1 ≈ 5 ms) – two-tone search phase only
-    "Gauss": False,
+    "relax_delay": 3500,
+    "Gauss": True,
     "sigma": 2,
-    "gain": 100,
-    "qubit_length": 25,
-    # --- parity-doublet peak-finder (utils.find_parity_doublet) ---
-    # Detection is referenced to the trace's noise floor (median + MAD), not its
-    # dynamic range, and prefers the most symmetric, balanced, prominent pair of
-    # peaks about qubit_frequency_center. Tune these if peaks are missed / spurious.
-    "prominence_snr": 5.0,  # peak prominence bar, in units of noise sigma.
-    #                             Lower (~3) to catch weak 2nd peaks; raise (~8)
-    #                             to reject noise spikes.
-    "min_sep_MHz": 0.02,  # resolution floor: closest two peaks may sit [MHz].
-    #                             This is NOT the parity threshold (that is "df");
-    #                             keep it well below df so near-threshold doublets
-    #                             are still detected and judged against df.
-    "max_sep_MHz": 0.15,  # max doublet separation [MHz]; None -> full span.
-    "symmetry_tol_MHz": None,  # max |doublet midpoint - center| [MHz]; None -> half
-    #                             span (lenient). Tighten (e.g. 0.05) to strictly
-    #                             enforce the symmetric-pair-about-center assumption.
-    "min_height_balance": 0.3,  # min (weaker/stronger) peak-height ratio for a pair.
-    "smooth_window": 5,  # Savitzky-Golay smoothing window [samples, odd].
-    "fit_window_mhz": 0.1,  # +/- window for sub-bin Lorentzian peak refinement [MHz].
-    # Live, non-blocking refresh of the two-tone amplitude plot (peaks + center +
-    # fits) in a single reused window as the voltage search walks. Requires an
-    # interactive matplotlib backend (TkAgg/QtAgg); a no-op (PNG still saved)
-    # under a non-interactive backend. The search never pauses for input.
-    "live_display": True,
-    "live_pause": 0.05,  # GUI event-loop pause per refresh [s].
+    "gain": 500,
+    "qubit_length": 2,
     # --- Modified Ramsey settings ---
     # tau is computed automatically as 1 / (2 * peak_sep_MHz)
     # f_ge is set automatically to the higher-frequency peak
     # No relax delay: the measurement collapses the qubit and acts as reset.
-    "mr_reps": 100000,  # number of single-shot Ramsey measurements per cycle
-    # "mr_reps": 500000,  # number of single-shot Ramsey measurements per cycle
-    "average_n_shots": 100,
-    # Marker transparency for the per-cycle IQ scatter plots. Lower = more
-    # transparent, so dense overlapping shots are easier to resolve individually.
-    "iq_plot_alpha": 0.5,
-    # ── Continuous (uninterrupted) acquisition mode ───────────────────────────
-    # When True, RunModifiedRamsey skips the per-cycle two-tone search and the
-    # per-cycle plotting and instead streams ModifiedRamsey chunks (mr_reps shots
-    # each, ~200k = one "snippet") back to back for a long uninterrupted run. The
-    # parity drive freq + separation are fixed ONCE up front (from the manual
-    # freqs when skip_two_tone_calibration=True, else a single initial two-tone
-    # search). Every chunk is saved as its own .npz holding raw I/Q + the current
-    # g/e separator only (no images); classify/average offline. The SingleShot
-    # separator calibration (ss_cal) is re-run on a TIME interval rather than
-    # every N cycles, and a fixed-path snippet file is overwritten on a TIME
-    # interval so the trace can be health-checked live.
-    "continuous_mode": False,
-    # Total acquisition time [s]; None -> run forever (stop with Ctrl-C).
-    "continuous_duration_s": None,
-    # Re-run ss_cal (SingleShot g/e separator) every N seconds. None/0 -> never
-    # recalibrate after the initial calibration.
-    "continuous_ss_recalib_interval_s": 600,
-    # Overwrite "latest_snippet.npz" every N seconds for live monitoring. Every
-    # chunk is also saved separately, so this is purely a fixed path to watch.
-    "snippet_save_interval_s": 60,
-    "use_active_reset": True,
-    # Single-readout feedback reset: reuse the FINAL Ramsey readout itself as the
-    # conditional-pi measurement. After each Ramsey readout, conditionally flip
-    # e->g so the next shot starts in |g>, WITHOUT firing a separate reset readout
-    # at the start of the shot (saves one readout per rep). Mutually exclusive with
-    # use_active_reset: when this is True it TAKES PRECEDENCE and the start-of-shot
-    # active reset is disabled. Reuses the same calibrated readout_threshold /
-    # reset_ground_below_threshold / pi_gain / reset_readout_relax_delay /
-    # post_reset_wait as active reset (the readout still discriminates |g>/|e>
-    # along I via the rotated res_phase).
-    "reset_from_ramsey_readout": True,
-    # Parity -> computational-state mapping (phase of the closing pi/2).
-    #   False (default): final pi/2 @ 180 deg -> on-resonant branch -> |g>,
-    #                    off-resonant branch -> |e>.
-    #   True:            final pi/2 @ 0 deg (sign-flipped 2nd pulse) -> on-resonant
-    #                    branch -> |e>, off-resonant branch -> |g>.
-    "flip_final_pi2": True,
-    # symmetric_ramsey: drive at the midpoint f_avg = (f_lower + f_upper)/2 instead
-    # of on-resonant with the upper peak, so both branches are symmetrically
-    # detuned by +/- df/2. Sequence: pi/2 @ 0 deg -> wait tau=1/(2*df) (each branch
-    # rotates +/-90 deg) -> closing pi/2 @ 90 deg -> readout.
-    #   False (default): standard scheme (drive on upper peak, closing pi/2 @ 180).
-    #   True:            symmetric-drive scheme. Default mapping f_upper -> |e>,
-    #                    f_lower -> |g>; flip_final_pi2 swaps it (90 <-> 270 deg).
-    "symmetric_ramsey": True,
-    # Explicit symmetric-mode drive frequency [MHz] = the center of the charge-
-    # dispersion curve (the midpoint between the two parity branches). Only used
-    # when symmetric_ramsey is True. None -> derive it as f_ge - df/2 (f_ge = upper
-    # peak), the old behaviour. Set a number to PIN the drive to a measured center
-    # instead; df (hence tau and the pi relative phase between branches) is
-    # unchanged, so this only sets the common-mode drive offset. Pinning it also
-    # keeps the drive fixed when df/tau is swept (e.g. the calibration sweep).
-    "symmetric_drive_freq": 2847.295,
-    # --- manual parity-frequency mode (skip the two-tone voltage search) ---
-    # When skip_two_tone_calibration is True, the two-tone spec voltage search is
-    # bypassed entirely and Modified Ramsey runs directly at the two parity
-    # frequencies below (MHz). The mapping mirrors the auto path:
-    #   f_ge = max(lower, upper)      (drive the higher-frequency parity peak)
-    #   df   = |upper - lower|  =>  tau = 1 / (2 * df)
-    # The single-shot separator calibration (used to classify shots) is NOT
-    # affected by this flag and still runs as configured.
-    "skip_two_tone_calibration": True,
-    "manual_lower_parity_freq": 2847.22,  # MHz, e.g. 2847.20
-    "manual_upper_parity_freq": 2847.37,  # MHz, e.g. 2847.36
-    # Yoko charge-bias voltage [V] used in manual mode. If None, manual mode runs
-    # at whatever voltage the Yokogawa is currently set to (it is not changed).
-    # Only applied when skip_two_tone_calibration is True.
-    "manual_voltage": 0.00,
-    # Active-reset readout rounds per shot (used by both the real Ramsey, when
-    # use_active_reset is True, and the verification experiment).
-    "reset_cycles": 1,
-    "reset_readout_relax_delay": 0.0,  # us after each reset readout
-    "post_reset_wait": 0.0,  # us settle after the reset block
-    ## TODO: CHANGE READOUT PARAMETERS IN TRANS_PARAMS
-}
-
-# ── Modified Ramsey calibration: fixed f_ge (Q2), sweep tau ───────────────────
-# Runs the SAME ModifiedRamsey sequence (same gains/sigma/reset/etc. pulled from
-# ModifiedRamsey_params), but holds the qubit drive frequency fixed at the Q2 value
-# (qubit_frequency_center) and sweeps the free-evolution time tau. The range is
-# expressed as an effective splitting df (tau = 1/(2*df)): df = 100 kHz -> tau =
-# 5 us down to df = 10 kHz -> tau = 50 us. n_tau sets how many tau points are
-# swept across that range. Output: a population-vs-tau calibration curve (Ramsey
-# fringe / T2*) at the fixed Q2 frequency.
-RunModifiedRamseyCalib = False
-ModifiedRamseyCalib_params = {
-    "df_start_MHz": 0.1,  # 100 kHz -> tau_start = 5 us
-    "df_stop_MHz": 0.01,  # 10 kHz  -> tau_stop  = 50 us
-    # Number of tau points swept across the range (this is the knob that sets how
-    # many tau are measured).
-    "n_tau": 21,
-    # How the points are distributed across the range:
-    #   "linear_tau" (default) – evenly in tau (5..50 us),
-    #   "linear_df"            – evenly in df (0.1..0.01 MHz),
-    #   "log_tau"              – geometric in tau.
-    "tau_spacing": "linear_tau",
-    # Shots per tau point. Smaller than the streaming mr_reps by default for speed;
-    # set equal to ModifiedRamsey_params["mr_reps"] to match exactly.
-    "mr_reps": 100000,
-    # Block size for the averaged time trace (same role as in ModifiedRamsey):
-    # consecutive shots are block-averaged in groups of this many to build the
-    # averaged excited-population-vs-time trace saved per tau point.
-    "average_n_shots": 100,
-    # Optional yoko bias [V] for the calibration. None -> leave the Yoko where it
-    # is (run at the present operating point).
-    "voltage": 0.015,
-    # Keep the qubit DRIVE frequency fixed exactly at f_ge = Q2 across the sweep.
-    # In symmetric_ramsey mode the drive is f_ge - df/2, which would shift by df/2
-    # (5-50 kHz) as df is swept; standard mode (False) drives on f_ge so it stays
-    # fixed. Set to None to inherit ModifiedRamsey_params["symmetric_ramsey"].
-    "symmetric_ramsey": True,
-    # Explicit symmetric-mode drive frequency [MHz] = the center of the charge-
-    # dispersion curve. When symmetric_ramsey is True, pinning this keeps the drive
-    # FIXED at the center for every tau point (df only sets tau, not the drive), so
-    # the sweep stays at a fixed qubit frequency. None -> inherit
-    # ModifiedRamsey_params["symmetric_drive_freq"] (which itself defaults to the
-    # derived f_ge - df/2).
-    "symmetric_drive_freq": 2847.2942,
-    # ── 2D mode: ALSO sweep the symmetric-mode drive frequency ────────────────
-    # When sweep_drive_freq is True the calibration becomes a 2D sweep over
-    # (symmetric drive frequency) x (tau): for every drive frequency the full tau
-    # list above is run, producing an excited-population heatmap vs (drive, tau)
-    # -- effectively a Ramsey chevron in the symmetric-drive scheme. The vertical
-    # zero-detuning column (P(e) flat / pinned near 0.5 regardless of tau) marks
-    # the true qubit/parity center; read it off and pin symmetric_drive_freq for
-    # the real ModifiedRamsey run. Requires symmetric_ramsey=True (the swept value
-    # sets cfg["symmetric_drive_freq"], which only has effect in symmetric mode).
-    # The drive axis is drive_freq_center +/- drive_freq_span/2 over n_drive_freq
-    # points, UNLESS drive_freq_list_MHz is given (which then takes precedence).
-    # drive_freq_center=None -> use symmetric_drive_freq above (or the Q2 center
-    # qubit_frequency_center if that is None too).
-    "sweep_drive_freq": True,
-    "drive_freq_center_MHz": None,  # None -> symmetric_drive_freq / Q2 center
-    "drive_freq_span_MHz": 0.3,  # total span; axis = center +/- span/2
-    "n_drive_freq": 13,
-    "drive_freq_list_MHz": None,  # explicit list [MHz]; overrides center/span/n
-    # Per-(drive,tau) point PNGs (averaged trace + IQ). A 2D sweep can emit
-    # hundreds of files; default off when sweeping the drive, on for a plain
-    # tau sweep. Set explicitly to override.
-    "per_point_plots": True,
-}
-
-# ── Active-reset verification ────────────────────────────────────────────────
-# Validates the hardware active reset that ModifiedRamsey relies on. First runs a
-# SingleShot g/e calibration (calibrate_active_reset_readout): rotates res_phase so
-# |g>/|e> separate along I and derives the I-threshold. Then sweeps four conditions
-# — prep |g>/|e>  ×  reset off/on — reading the qubit out n_verify_reads times per
-# shot. A working, QND reset gives: prep|e>+reset ON  P(|g>) ≈ prep|g>+reset ON
-# ≈ ground readout fidelity, and ≫ the prep|e>+reset OFF control, with P(|g>) flat
-# across the repeated reads. Saves per-condition data + an overlay plot + a verdict.
-RunActiveResetVerify = False
-ActiveResetVerify_params = {
-    "n_verify_reads": 5,  # back-to-back readouts after the reset block
-    "verify_relax_delay": 5.0,  # us between consecutive verification readouts
-    "reps": 2000,  # single shots per condition
-    "reset_cycles": 1,  # measure->feedback rounds per shot
-    "reset_readout_relax_delay": 1.0,  # us after each reset readout
-    "post_reset_wait": 0.0,  # us settle after the reset block
-    "relax_delay": 3000,  # us between reps (>= 3*T1 to re-thermalise)
-    "plotDisp": True,
+    "mr_reps": 40000,  # number of single-shot Ramsey measurements per cycle
+    "average_n_shots": 400,
 }
 
 RunModifiedRamsey_Control = (
@@ -756,7 +422,7 @@ ModifiedRamsey_Control_params = {
     "SpecNumPoints": 101,
     "reps": 10,
     "rounds": 10,
-    "relax_delay": 15000,  # us ≈ 3*T1 (T1 ≈ 5 ms) – two-tone search phase only
+    "relax_delay": 1500,
     "Gauss": True,
     "sigma": 2,
     "gain": 700,
@@ -785,36 +451,33 @@ ChiShift_params = {
     "TransSpan": 1,  ### MHz, span will be center+/- this parameter
     "TransNumPoints": 101,
     "cavity_shift": 0.2,
-    "relax_delay": 15000,  # us ≈ 3*T1 (T1 ≈ 5 ms) – pi pulse needs full thermalisation
+    "relax_delay": 4000,
 }
 
 RunAmplitudeRabi = False
 Amplitude_Rabi_params = {
     "qubit_freq": Qubit_Parameters[str(Qubit_Pulse)]["Qubit"]["Frequency"],
-    "max_gain": 30000,
-    "number_of_steps": 101,
-    "reps": 10,
-    "rounds": 10,
-    "relax_delay": 3000,  # us ≈ 3*T1 (T1 ≈ 5 ms) – thermalise before each shot
+    "max_gain": 10000,
+    "number_of_steps": 501,
+    "reps": 25,
+    "rounds": 25,
+    "relax_delay": 4500,
     "fit": True,
 }  # Always change the max gain if you don't see it, also compare what you get with Transmission data
 
 RunT1 = False
 RunT2 = False
-# TATQ01 long-coherence regime: T1 ≈ 5 ms, T2R ≈ 1 ms. Probe T1 out to ~3*T1
-# (101 × 150 us ≈ 15 ms) and T2R out to ~3*T2R (301 × 10 us ≈ 3 ms); relax_delay
-# ≈ 3*T1 = 15 ms so the qubit fully thermalises between shots.
 T1T2_params = {
-    "T1_step": 10,
-    "T1_expts": 101,
+    "T1_step": 50,
+    "T1_expts": 60,
     "T1_reps": 20,
     "T1_rounds": 20,  # 80 100 30 30
-    "T2_step": 10,
-    "T2_expts": 301,
+    "T2_step": 0.25,
+    "T2_expts": 100,
     "T2_reps": 20,
     "T2_rounds": 20,
     "freq_shift": 0.0,
-    "relax_delay": 3000,  # us ≈ 3*T1
+    "relax_delay": 3500,  # 5000
     "repetitions": 1000,
 }
 
@@ -823,14 +486,13 @@ RunT1T2E = False
 RunT1T2RT2E = False
 
 RunT2E = False
-# T2E ≈ 3 ms: probe out to ~3*T2E ≈ 9 ms; relax_delay ≈ 3*T1 = 15 ms.
 T2E_params = {
-    "T2_max_us": 9000,
-    "T2_expts": 181,
+    "T2_max_us": 120,
+    "T2_expts": 121,
     "T2_reps": 25,
     "T2_rounds": 25,
     "freq_shift": 0.0,
-    "relax_delay": 15000,  # us ≈ 3*T1
+    "relax_delay": 3500,
     "num_pi_pulses": 1,  # need odd number of pulses
     "rotation_angle": None,
     "min_max": None,
@@ -840,23 +502,22 @@ T2E_params = {
 SingleShot = False
 SS_params = {
     "Shots": 1000,
-    "Readout_Time": 5,
+    "Readout_Time": 25,
     "ADC_Offset": 1,
     "Qubit_Pulse": [Qubit_Pulse],
     "number_of_pulses": 1,
-    "relax_delay": 3000,  # us ≈ 3*T1 (T1 ≈ 5 ms)
+    "relax_delay": 3500,
     "pi2_SS": False,
 }  # keep at 15
 
 RunT1SS = False
-# T1 ≈ 5 ms: probe out to ~3*T1 (101 × 150 us ≈ 15 ms); relax_delay ≈ 3*T1.
 T1SS_params = {
-    "T1_step": 150,
-    "T1_expts": 101,
+    "T1_step": 80,
+    "T1_expts": 100,
     "reps": 2000,
     "angle": 0,
     "threshold": 0,
-    "relax_delay": 15000,  # us ≈ 3*T1
+    "relax_delay": 8000,
     "calibrate_SS": True,
     "repetitions": 3000,
 }
@@ -870,12 +531,12 @@ SS_R_params = {
     "trans_pts": 21,
 }
 
-SingleShot_QubitOptimize = True
+SingleShot_QubitOptimize = False
 SS_Q_params = {
-    "q_gain_span": 500,
-    "q_gain_pts": 21,
-    "q_freq_span": 0.1,
-    "q_freq_pts": 3,
+    "q_gain_span": 250,
+    "q_gain_pts": 50,
+    "q_freq_span": 0.2,
+    "q_freq_pts": 11,
     "number_of_pulses": 1,
 }  # for optimizing pi/2 pulse, set the gain to the half of its value and optimize for n=2
 
@@ -883,176 +544,44 @@ SS_Q_params = {
 # Set RunAutoCoherence = True to run the full automated calibration pipeline.
 # Override any entry in AUTO_COHERENCE_PARAMS by adding it to the dict below.
 RunAutoCoherence = False
-# ── TATQ01 long-coherence regime ─────────────────────────────────────────────
-# Measured scales: T1 ≈ 5 ms, T2R ≈ 1 ms, T2E ≈ 3 ms.
-# Two requirements drive every value below:
-#   (1) Cooldown between shots ≈ 3*T1 = 15 ms  →  all *_relax_delay = 15000 us.
-#       This applies to the calibration stages (Rabi, SingleShot) too, so the
-#       qubit fully thermalises to |g> before every shot.
-#   (2) Each coherence experiment must span ~order of its own coherence time:
-#       T1   out to ~3*T1  = 15 ms,  T2R out to ~3*T2R = 3 ms,
-#       T2E  out to ~3*T2E = 9 ms.
-# NOTE: with 15 ms relax delays these runs are slow; trim *_reps / *_rounds /
-#       *_expts if wall-clock time is a concern.
-_THREE_T1_US = 15000  # 3 * T1 (T1 ≈ 5 ms) – cooldown floor for every stage
 AutoCoherence_override_params = {
-    # ── Stage 1: sweet-spot search ────────────────────────────────────────────
-    # Disabled by default: skip the two-tone spec sweep / yoko voltage stepping
-    # and start from the qubit_params frequency. Set True to run the search.
-    "run_sweet_spot_search": False,
-    # ── Cooldown for the calibration stages (Rabi, SingleShot) ≈ 3*T1 ─────────
-    "rabi_relax_delay": _THREE_T1_US,
-    "ss_relax_delay": _THREE_T1_US,
-    # Other available overrides (uncomment and edit):
+    # Examples (uncomment and edit to override defaults):
     # "spec_span":        1.0,    # MHz, ±span for two-tone spec
     # "spec_sigma":       2.0,    # us,  Gaussian sigma for spec drive
     # "rabi_max_gain":    12000,  # max gain for AmplitudeRabi
     # "ss_target_fidelity": 0.70, # minimum SingleShot fidelity
+    # "T1_repetitions":   1,
+    # "T2_repetitions":   1,
+    # "T2E_repetitions":  1,
     # "cd_period_mv":     4.37,   # mV, charge-dispersion period if known
     # "extended_pi_pi2_opt":  False, # use extended pi and pi/2 optimization
     # "ss_gain_span_frac": 0.05, # how much of single shot to search
     # "ss_gain_pts": 20, # how many points in single shot space to search
     # "auto_readout_opt":      True,
-    # ── T1 ── probe out to ~3*T1 = 15 ms (101 pts × 150 us) ───────────────────
-    "T1_step": 150,  # us – wait-time step (101 pts → 15.15 ms)
-    "T1_expts": 101,  # number of time points
-    "T1_reps": 20,
-    "T1_rounds": 20,
-    "T1_relax_delay": _THREE_T1_US,  # us ≈ 3*T1
-    "T1_repetitions": 1,  # number of consecutive T1 runs
-    # ── T2 Ramsey ── probe out to ~3*T2R = 3 ms (301 pts × 10 us) ─────────────
-    "T2_step": 10,  # us – Ramsey delay step (301 pts → 3.01 ms)
-    "T2_expts": 301,
-    "T2_reps": 20,
-    "T2_rounds": 20,
-    "T2_relax_delay": _THREE_T1_US,  # us ≈ 3*T1
-    "T2_repetitions": 1,
-    "T2_freq_shift": 0.0,  # MHz – artificial detuning from f_ge
-    # ── T2Echo ── probe out to ~3*T2E = 9 ms (181 pts ≈ 50 us step) ───────────
-    "T2E_max_us": 9000,  # us – maximum echo time
-    "T2E_expts": 181,
-    "T2E_reps": 25,
-    "T2E_rounds": 25,
-    "T2E_relax_delay": _THREE_T1_US,  # us ≈ 3*T1
-    "T2E_num_pi_pulses": 1,  # must be odd
-    "T2E_repetitions": 1,
+    # ── T1 ──────────────────────────────────────────────────────────────────
+    # "T1_step":         40,        # us – wait-time step
+    # "T1_expts":        60,        # number of time points
+    # "T1_reps":         20,
+    # "T1_rounds":       20,
+    # "T1_relax_delay":  3500,      # us
+    "T1_repetitions": 5,  # number of consecutive T1 runs
+    # ── T2 Ramsey ───────────────────────────────────────────────────────────
+    "T2_step": 0.5,  # us – Ramsey delay step
+    "T2_expts": 401,
+    # "T2_reps":         20,
+    # "T2_rounds":       20,
+    # "T2_relax_delay":  3500,      # us
+    "T2_repetitions": 5,
+    # "T2_freq_shift":   0.0,       # MHz – artificial detuning from f_ge
+    # ── T2Echo ──────────────────────────────────────────────────────────────
+    "T2E_max_us": 1000,  # us – maximum echo time
+    # "T2E_expts":        201,
+    # "T2E_reps":         25,
+    # "T2E_rounds":       25,
+    # "T2E_relax_delay":  3500,     # us
+    # "T2E_num_pi_pulses": 1,       # must be odd
+    "T2E_repetitions": 5,
 }
-
-# ── Zero-span charge-parity switching measurement ───────────────────────────
-# Device-agnostic acquisition (mZeroSpanParity) + offline analysis
-# (analyze_ZeroSpanParity). Full configuration contract:
-#   docs/superpowers/specs/2026-05-16-bfc-charge-parity-zero-span-design.md §5
-#
-# Operates on the currently-selected Qubit_Readout/Qubit_Pulse qubit, reusing the
-# resonator/qubit frequencies and gains derived below (resonator_frequency_center,
-# qubit_gain, cavity_gain, qubit_frequency_center). Set RunZeroSpanParity = True,
-# edit the blocks here, then run this file.
-#
-# Hard constraints (validated fail-fast in ZeroSpanParity.__init__, spec §5.3):
-#   sample_period_us >= adc_trig_offset + read_length + 1.0
-#   us2cycles(sample_period_us | capture_length_us) <= 65535
-#   reps_per_chunk <= soccfg['readouts'][ro_ch]['avg_maxlen']
-#   decimated read_length samples <= soccfg['readouts'][ro_ch]['buf_maxlen']
-RunZeroSpanParity = False
-
-# Acquisition mode + trigger source
-ZSP_RunMode = "strobe"  # "strobe" (Path A, v1) | "decimated" (Path B, v2)
-ZSP_StartSrc = "internal"  # "internal" (spontaneous) | "external" (triggered)
-
-# Recalibration toggles
-ZSP_RecalibrateParityFreqs = True  # run a narrow QubitSpecSliceFF first
-ZSP_RecalibrateSeparator = True  # run single-shot pi-pulse g/e calibration
-
-# Calibration cache (used when the matching Recalibrate flag is False)
-ZSP_ParityFreqs_Cached = {
-    "lower_peak_MHz": None,
-    "higher_peak_MHz": None,
-    "which_to_park": "lower",  # "lower" | "higher"
-}
-ZSP_Separator_Cached = {
-    "g_center": None,
-    "e_center": None,
-    "normal": None,
-    "midpoint": None,
-}
-
-# Narrow two-tone spec used when ZSP_RecalibrateParityFreqs=True (mirrors the
-# Run2ToneSpec block; centered on qubit_frequency_center).
-ZSP_ParitySpec_params = {
-    "SpecSpan": 1.0,
-    "SpecNumPoints": 201,
-    "reps": 10,
-    "rounds": 10,
-    "relax_delay": 15000,  # us ≈ 3*T1 (T1 ≈ 5 ms)
-    "Gauss": True,
-    "sigma": 2,
-    "gain": 500,
-    "qubit_length": 2,
-    "min_sep_MHz": 0.2,
-    "fit_window_mhz": 0.5,
-    "prominent_ratio": 0.1,
-}
-
-# Strobe-mode params (Path A). sample_period_us floor = adc_trig_offset +
-# read_length + 1.0 us; reps_per_chunk capped at avg_maxlen; total record (s) =
-# reps_per_chunk * n_chunks * sample_period_us * 1e-6 (~12 s for defaults below).
-ZSP_StrobeParams = {
-    "sample_period_us": 20.0,
-    "reps_per_chunk": 10000,
-    "n_chunks": 60,
-    "read_length": 5.0,
-    "adc_trig_offset": 0.488,
-}
-
-# Decimated-mode params (Path B). capture_length_us must cover the readout window
-# (adc_trig_offset + read_length) and stay under the 16-bit cycle cap. soft_avgs
-# must be 1 unless allow_soft_avgs=True (>1 destroys parity trajectories).
-# n_captures>1 concatenates back-to-back captures, marking boundaries in
-# gap_indices.
-ZSP_DecimatedParams = {
-    "capture_length_us": 100.0,
-    "soft_avgs": 1,
-    "n_captures": 1,
-    "read_length": 80.0,
-    "adc_trig_offset": 0.488,
-    "allow_soft_avgs": False,
-}
-
-# Drive params (mode-independent). qubit_gain/pulse_gain = None -> use the active
-# qubit's tuned values (qubit_gain / cavity_gain globals).
-ZSP_DriveParams = {
-    "qubit_gain": None,
-    "pulse_gain": None,
-    "res_phase": 0,
-}
-
-# Offline-analysis params (see analyze_parity_run docstring).
-ZSP_AnalysisParams = {
-    "classifier_method": "apriori",  # "apriori" | "kmeans"
-    "window_us": 1000.0,
-    "k_sigma": 5.0,
-    "step_us": None,
-    "min_burst_duration_us": None,
-    "analysis_bin_us": None,  # set < read_length for decimated apriori
-    "save_plots": True,
-}
-
-# ============================ VALIDATION HARNESS (spec 2026-06-01) ============================
-# Strobe-only. Each block reuses ZSP_Separator_Cached / ZSP_ParityFreqs_Cached and the
-# zsp_cfg already built for ZeroSpanParity. Run order: stage1 -> stage2 -> stage1 refine ->
-# stage3 (gate) -> stage4 -> 5/6 -> 8 -> 7 -> 9.  See spec 6.3.
-Validate_StaticContrast = False
-Validate_ContrastVsQubitFreq = False
-Validate_ModulationCheck = False  # pipeline-sanity gate -- run first
-Validate_ControlSuite = False
-Validate_EnvironmentSweep = False
-Build_EvidenceReport = False
-
-StaticContrast_params = {"freq_span_mhz": 2.0, "n_points": 41, "reps_per_point": 2000}
-ContrastVsQubit_params = {"qfreq_span_mhz": 10.0, "n_points": 81}
-Modulation_params = {"modulation_freq_hz": 25, "n_periods": 10}
-Control_params = {"variants": ["A", "B", "C", "D"], "detune_mhz": 50.0}
-Environment_params = {"param_name": "power_dB", "values": [-10, -8, -6, -4]}
 
 cavity_gain = Qubit_Parameters[str(Qubit_Readout)]["Readout"]["Gain"]
 resonator_frequency_center = Qubit_Parameters[str(Qubit_Readout)]["Readout"][
@@ -1068,15 +597,7 @@ qubit_flattop = Qubit_Parameters[str(Qubit_Pulse)]["Qubit"]["flattop_length"]
 trans_config = {
     "reps": 1000,  # this will used for all experiements below unless otherwise changed in between trials
     "pulse_style": "const",  # --Fixed
-    # Resonator readout length [us]. "length" sets the readout TONE/pulse duration
-    # (mModifiedRamsey plays the res pulse for us2cycles(cfg["length"])); previously
-    # it was NOT set here, so it fell back to BaseConfig ("length": 30) and editing
-    # readout_length alone never changed the Ramsey readout tone. "readout_length"
-    # is the ADC integration window. Keep the two equal so the window tracks the
-    # tone.
-    "length": 30,  # us – resonator readout tone duration
-    "readout_length": 15,  # us – ADC integration window (keep = "length")
-    # "readout_length": 1,  # 15 [us]
+    "readout_length": 15,  # 15 [us]
     "pulse_gain": cavity_gain,  # [DAC units]
     "pulse_freq": resonator_frequency_center,  # [MHz] actual frequency is this number + "cavity_LO"
     "TransSpan": Transmission_params[
@@ -1285,8 +806,7 @@ if Run2ToneSpec:
     if Spec_relevant_params["Gauss"]:
         config["sigma"] = Spec_relevant_params["sigma"]
         config["qubit_gain"] = Spec_relevant_params["gain"]
-
-    config["qubit_gain"] = Spec_relevant_params["gain"]
+        config["qubit_gain"] = Spec_relevant_params["gain"]
 
     config["qubit_length"] = Spec_relevant_params["qubit_length"]
     config["SpecSpan"] = Spec_relevant_params["SpecSpan"]
@@ -1314,74 +834,6 @@ if Run2ToneSpec:
     QubitSpecSliceFF.save_data(Instance_specSlice, data_specSlice)
     QubitSpecSliceFF.save_config(Instance_specSlice)
 
-# Gain (and optionally length) sweep.
-# sweep_gain_only=True : sweep only qubit_gain at the fixed configured qubit_length.
-# sweep_gain_only=False: nested qubit_length × qubit_gain sweep (a full qubit spec
-#                        at every gain for each length).
-# qubit_gain and qubit_length appear in every saved plot title for easy identification.
-if RunSpecGainLengthSweep:
-    sweep_gain_only = Spec_relevant_params.get("sweep_gain_only", False)
-    sweep_gains = Spec_relevant_params["sweep_gains"]
-    if sweep_gain_only:
-        # Hold qubit_length fixed at the configured value; sweep gain only.
-        sweep_lengths = [Spec_relevant_params["qubit_length"]]
-        print(
-            f"=== GainLengthSweep: GAIN-ONLY mode, qubit_length fixed at "
-            f"{Spec_relevant_params['qubit_length']} µs, "
-            f"{len(sweep_gains)} gain points ==="
-        )
-    else:
-        sweep_lengths = Spec_relevant_params["sweep_lengths"]
-        print(
-            f"=== GainLengthSweep: nested length × gain mode, "
-            f"{len(sweep_lengths)} lengths × {len(sweep_gains)} gains ==="
-        )
-
-    _disp = Spec_relevant_params["display"]
-    _minsep = Spec_relevant_params["min_sep_MHz"]
-    _fw = Spec_relevant_params.get("fit_window_mhz", 0.5)
-    _pr = Spec_relevant_params.get("prominent_ratio", 0.1)
-
-    for q_length in sweep_lengths:
-        for q_gain in sweep_gains:
-            print(
-                f"\n=== GainLengthSweep: qubit_length={q_length} µs  qubit_gain={q_gain} ==="
-            )
-
-            config["reps"] = Spec_relevant_params["reps"]
-            config["rounds"] = Spec_relevant_params["rounds"]
-            config["Gauss"] = Spec_relevant_params["Gauss"]
-            config["qubit_gain"] = q_gain
-            config["qubit_length"] = q_length
-            config["SpecSpan"] = Spec_relevant_params["SpecSpan"]
-            config["SpecNumPoints"] = Spec_relevant_params["SpecNumPoints"]
-            config["step"] = 2 * config["SpecSpan"] / config["SpecNumPoints"]
-            config["start"] = qubit_frequency_center - config["SpecSpan"]
-            config["expts"] = config["SpecNumPoints"]
-            config["relax_delay"] = Spec_relevant_params["relax_delay"]
-            if Spec_relevant_params["Gauss"]:
-                config["sigma"] = Spec_relevant_params["sigma"]
-
-            _inst = QubitSpecSliceFF(
-                path="QubitSpecFF",
-                cfg=config,
-                soc=soc,
-                soccfg=soccfg,
-                outerFolder=outerFolder,
-            )
-            _data = QubitSpecSliceFF.acquire(_inst)
-            QubitSpecSliceFF.display(
-                _inst,
-                _data,
-                plotDisp=_disp,
-                figNum=2,
-                min_sep=_minsep,
-                fit_window_mhz=_fw,
-                prominent_ratio=_pr,
-            )
-            QubitSpecSliceFF.save_data(_inst, _data)
-            QubitSpecSliceFF.save_config(_inst)
-
 if RunChiShift:
     updated_params = {
         "pi_gain": qubit_gain,
@@ -1398,6 +850,7 @@ if RunChiShift:
     ChiShift.save_data(iChi, dChi)
     ChiShift.save_config(iChi)
 
+yoko = None
 if Run2ToneChargeDispersionQuasiCW:
     save_dir = os.path.join(outerFolder, "TwoToneChargeDispersion")
     os.makedirs(save_dir, exist_ok=True)
@@ -1470,10 +923,8 @@ if Run2ToneChargeDispersionQuasiCW:
             x_pts = np.array(data_specSlice["data"]["x_pts"])
             avgi = np.array(data_specSlice["data"]["avgi"][0][0])
             avgq = np.array(data_specSlice["data"]["avgq"][0][0])
-            # Rotate onto the signal-bearing IQ axis (background-subtracted) instead
-            # of the raw magnitude |I+iQ|^2, which is dominated by the large, noisy
-            # background quadrature and buries the qubit feature.
-            avgamp0 = project_iq_signal(avgi, avgq)
+            sig = avgi + 1j * avgq
+            avgamp0 = np.abs(sig) ** 2
 
             freq_choice = choose_two_tone_freqs_from_lorentz_or_peaks(
                 data_specSlice,
@@ -1494,8 +945,6 @@ if Run2ToneChargeDispersionQuasiCW:
                 attempt_idx=attempt_idx + cycle_idx * max_tries,
                 save_dir=save_dir,
                 current_voltage=current_voltage,
-                qubit_gain=config.get("qubit_gain"),
-                qubit_length=config.get("qubit_length"),
             )
 
             with open(save_base + "_summary.txt", "w") as f:
@@ -1798,25 +1247,6 @@ if RunModifiedRamsey:
     max_tries_mr = ModifiedRamsey_params["max_voltage_tries"]
     num_cycles_mr = ModifiedRamsey_params["num_cycles"]
 
-    # Manual parity-frequency mode: skip the two-tone voltage search and use the
-    # operator-supplied lower/upper parity frequencies directly.
-    skip_two_tone_mr = ModifiedRamsey_params.get("skip_two_tone_calibration", False)
-    lower_parity_freq_mr = ModifiedRamsey_params.get("manual_lower_parity_freq", None)
-    upper_parity_freq_mr = ModifiedRamsey_params.get("manual_upper_parity_freq", None)
-    manual_voltage_mr = ModifiedRamsey_params.get("manual_voltage", None)
-    if skip_two_tone_mr:
-        if lower_parity_freq_mr is None or upper_parity_freq_mr is None:
-            raise ValueError(
-                "skip_two_tone_calibration=True requires both "
-                "manual_lower_parity_freq and manual_upper_parity_freq (MHz) "
-                "in ModifiedRamsey_params."
-            )
-        if float(upper_parity_freq_mr) == float(lower_parity_freq_mr):
-            raise ValueError(
-                "manual_upper_parity_freq and manual_lower_parity_freq must "
-                "differ (their separation sets tau = 1 / (2 * |upper - lower|))."
-            )
-
     ModifiedRamsey_params.setdefault("hysteresis_low", 0.2)
     ModifiedRamsey_params.setdefault("hysteresis_high", 0.8)
     ModifiedRamsey_params.setdefault("window_ms", 0.05)
@@ -1824,364 +1254,16 @@ if RunModifiedRamsey:
     current_voltage_mr = float(yoko.query(":SOUR:LEV?"))
     direction_mr = +1
 
-    # In manual mode, set the charge bias to the requested voltage up front (the
-    # two-tone voltage search that would normally move the Yoko is skipped).
-    if skip_two_tone_mr and manual_voltage_mr is not None:
-        print(
-            f"[ModifiedRamsey] Manual mode: ramping Yoko "
-            f"{current_voltage_mr:.6f} V -> {float(manual_voltage_mr):.6f} V"
-        )
-        ramp_to(yoko, float(manual_voltage_mr))
-        current_voltage_mr = float(manual_voltage_mr)
-
     cycle_summary_mr = []
 
     apriori_sep_mr = None
-
-    # Active reset thresholds on raw I only, so |g>/|e> must separate along I.
-    # Calibrate res_phase + I-threshold ONCE up front (rotates config["res_phase"]
-    # so the subsequent apriori separator is measured in the rotated frame). The
-    # per-cycle threshold/ground-below are recomputed from apriori_sep_mr below so
-    # they track blob drift across recalibrations.
-    mr_reset_from_readout = ModifiedRamsey_params.get(
-        "reset_from_ramsey_readout", False
-    )
-    # reset_from_ramsey_readout takes precedence over use_active_reset (the two are
-    # mutually exclusive; see ModifiedRamsey docstring / wire_reset_into_mr_cfg).
-    mr_use_active_reset = (
-        ModifiedRamsey_params.get("use_active_reset", False)
-        and not mr_reset_from_readout
-    )
-    # Both strategies threshold on raw I, so res_phase must be rotated to separate
-    # |g>/|e> along I. Calibrate up front for either one.
-    if mr_use_active_reset or mr_reset_from_readout:
-        calibrate_active_reset_readout(
-            config=config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
-        )
 
     if ModifiedRamsey_params.get("use_apriori_separator", False):
         apriori_sep_mr = get_apriori_separator_from_singleshot(
             config=config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
         )
     ss_recalib_n_mr = ModifiedRamsey_params.get("ss_recalib_every_n_cycles", None)
-    inter_cycle_delay_mr = ModifiedRamsey_params.get("inter_cycle_delay", 0)
-    iq_plot_alpha_mr = ModifiedRamsey_params.get("iq_plot_alpha", 0.5)
-
-    continuous_mode_mr = ModifiedRamsey_params.get("continuous_mode", False)
-    if continuous_mode_mr:
-        # ── Continuous (uninterrupted) acquisition ────────────────────────────
-        # Park at fixed parity frequencies and stream ModifiedRamsey chunks back
-        # to back. f_ge / df are fixed ONCE here; the per-cycle two-tone search
-        # and per-cycle plotting are skipped. ss_cal and a fixed-path "latest"
-        # snippet are written on TIME intervals so the trace can be monitored
-        # live. Every chunk is saved (raw I/Q + separator only).
-        cont_duration_s = ModifiedRamsey_params.get("continuous_duration_s", None)
-        ss_recalib_interval_s = ModifiedRamsey_params.get(
-            "continuous_ss_recalib_interval_s", None
-        )
-        snippet_interval_s = ModifiedRamsey_params.get("snippet_save_interval_s", 60)
-
-        if (mr_use_active_reset or mr_reset_from_readout) and apriori_sep_mr is None:
-            raise RuntimeError(
-                "continuous_mode with active reset / reset_from_ramsey_readout "
-                "requires the apriori SingleShot separator; set "
-                "use_apriori_separator=True."
-            )
-
-        # --- determine f_ge / df ONCE (no per-chunk search) ---
-        if skip_two_tone_mr:
-            chosen_peak_sep_cont = abs(
-                float(upper_parity_freq_mr) - float(lower_parity_freq_mr)
-            )
-            chosen_probe_freq_cont = max(
-                float(lower_parity_freq_mr), float(upper_parity_freq_mr)
-            )
-            print(
-                f"[ModifiedRamsey:continuous] manual parity mode: "
-                f"lower={float(lower_parity_freq_mr):.6f} MHz, "
-                f"upper={float(upper_parity_freq_mr):.6f} MHz, "
-                f"f_ge={chosen_probe_freq_cont:.6f} MHz, "
-                f"df={chosen_peak_sep_cont:.6f} MHz, "
-                f"tau={1.0 / (2.0 * chosen_peak_sep_cont):.4f} us"
-            )
-        else:
-            # One-time two-tone voltage search to fix the parity frequencies.
-            chosen_probe_freq_cont = None
-            chosen_peak_sep_cont = None
-            for attempt_idx_mr in range(max_tries_mr):
-                print(
-                    f"[ModifiedRamsey:continuous] initial search attempt "
-                    f"{attempt_idx_mr + 1}/{max_tries_mr}, V={current_voltage_mr:.6f} V"
-                )
-                config["current_voltage"] = current_voltage_mr
-                config["reps"] = ModifiedRamsey_params["reps"]
-                config["rounds"] = ModifiedRamsey_params["rounds"]
-                config["Gauss"] = ModifiedRamsey_params["Gauss"]
-                config["relax_delay"] = ModifiedRamsey_params["relax_delay"]
-                if config["Gauss"]:
-                    config["sigma"] = ModifiedRamsey_params["sigma"]
-                    config["qubit_gain"] = ModifiedRamsey_params["gain"]
-                config["qubit_length"] = ModifiedRamsey_params["qubit_length"]
-                config["SpecSpan"] = ModifiedRamsey_params["SpecSpan"]
-                config["SpecNumPoints"] = ModifiedRamsey_params["SpecNumPoints"]
-                config["step"] = 2 * config["SpecSpan"] / config["SpecNumPoints"]
-                config["start"] = qubit_frequency_center - config["SpecSpan"]
-                config["expts"] = config["SpecNumPoints"]
-
-                Instance_specSlice_mr = QubitSpecSliceFF(
-                    path="ModifiedRamsey",
-                    cfg=config,
-                    soc=soc,
-                    soccfg=soccfg,
-                    outerFolder=outerFolder,
-                )
-                data_specSlice_mr = QubitSpecSliceFF.acquire(Instance_specSlice_mr)
-                QubitSpecSliceFF.display(
-                    Instance_specSlice_mr,
-                    data_specSlice_mr,
-                    plotDisp=False,
-                    figNum=2,
-                    min_sep=Spec_relevant_params["min_sep_MHz"],
-                    fit_window_mhz=Spec_relevant_params["fit_window_mhz"],
-                    prominent_ratio=Spec_relevant_params["prominent_ratio"],
-                )
-                QubitSpecSliceFF.save_data(Instance_specSlice_mr, data_specSlice_mr)
-                QubitSpecSliceFF.save_config(Instance_specSlice_mr)
-
-                x_pts_mr = np.array(data_specSlice_mr["data"]["x_pts"])
-                avgi_mr = np.array(data_specSlice_mr["data"]["avgi"][0][0])
-                avgq_mr = np.array(data_specSlice_mr["data"]["avgq"][0][0])
-                avgamp0_mr = project_iq_signal(avgi_mr, avgq_mr)
-
-                doublet_mr = find_parity_doublet(
-                    x_pts_mr,
-                    avgamp0_mr,
-                    center_freq=qubit_frequency_center,
-                    min_sep_mhz=ModifiedRamsey_params.get("min_sep_MHz", 0.02),
-                    max_sep_mhz=ModifiedRamsey_params.get("max_sep_MHz", None),
-                    prominence_snr=ModifiedRamsey_params.get("prominence_snr", 5.0),
-                    smooth_window=ModifiedRamsey_params.get("smooth_window", 5),
-                    symmetry_tol_mhz=ModifiedRamsey_params.get(
-                        "symmetry_tol_MHz", None
-                    ),
-                    min_height_balance=ModifiedRamsey_params.get(
-                        "min_height_balance", 0.3
-                    ),
-                    fit_window_mhz=ModifiedRamsey_params.get("fit_window_mhz", 0.1),
-                    refine=True,
-                )
-
-                center_peak_tol_mhz = ModifiedRamsey_params.get(
-                    "center_peak_tol_mhz", 0.05
-                )
-                center_peak_df_for_tau = ModifiedRamsey_params.get(
-                    "center_peak_df_for_tau", df_required_mr
-                )
-                doublet_centered_mr = (
-                    doublet_mr["center"] is not None
-                    and abs(doublet_mr["center"] - qubit_frequency_center)
-                    <= center_peak_tol_mhz
-                )
-                if (
-                    doublet_mr["mode"] == "doublet"
-                    and doublet_mr["peak_sep"] is not None
-                    and doublet_mr["peak_sep"] >= df_required_mr
-                ):
-                    chosen_probe_freq_cont = float(doublet_mr["upper"])
-                    chosen_peak_sep_cont = float(doublet_mr["peak_sep"])
-                    break
-                elif doublet_centered_mr:
-                    chosen_probe_freq_cont = float(doublet_mr["center"])
-                    chosen_peak_sep_cont = float(center_peak_df_for_tau)
-                    break
-
-                next_voltage_mr, direction_mr = choose_next_voltage(
-                    current_v=current_voltage_mr,
-                    dv=dV_mr,
-                    vmin=voltage_min_mr,
-                    vmax=voltage_max_mr,
-                    direction=direction_mr,
-                )
-                if abs(next_voltage_mr - current_voltage_mr) < 1e-15:
-                    print("[ModifiedRamsey:continuous] voltage step stalled at bounds.")
-                    break
-                ramp_to(yoko, next_voltage_mr)
-                current_voltage_mr = next_voltage_mr
-
-            if chosen_probe_freq_cont is None:
-                raise RuntimeError(
-                    "[ModifiedRamsey:continuous] initial two-tone search failed to "
-                    "find sufficient peak separation; aborting continuous run."
-                )
-
-        tau_us_cont = 1.0 / (2.0 * chosen_peak_sep_cont)
-
-        # Build the Ramsey config once (mirrors the per-cycle path below).
-        mr_cfg = {
-            "f_ge": chosen_probe_freq_cont,
-            "df": chosen_peak_sep_cont,
-            "pi2_gain": pi2_gain,
-            "pi_gain": qubit_gain,
-            "use_pi_pulse": ModifiedRamsey_params.get("use_pi_pulse", False),
-            "flip_final_pi2": ModifiedRamsey_params.get("flip_final_pi2", False),
-            "symmetric_ramsey": ModifiedRamsey_params.get("symmetric_ramsey", False),
-            "symmetric_drive_freq": ModifiedRamsey_params.get(
-                "symmetric_drive_freq", None
-            ),
-            "sigma": qubit_sigma,
-            "flattop_length": qubit_flattop,
-            "reps": ModifiedRamsey_params["mr_reps"],
-            "rounds": 1,
-            "current_voltage": current_voltage_mr,
-            "Qubit_number": Qubit_Readout,
-            "iq_plot_alpha": iq_plot_alpha_mr,
-        }
-        wire_reset_into_mr_cfg(
-            mr_cfg,
-            apriori_sep_mr,
-            ModifiedRamsey_params,
-            mr_use_active_reset,
-            mr_reset_from_readout,
-        )
-        config_mr = config | mr_cfg
-
-        run_tag_cont = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        cont_dir = os.path.join(save_dir_mr, f"continuous_{run_tag_cont}")
-        os.makedirs(cont_dir, exist_ok=True)
-        latest_snippet_path = os.path.join(cont_dir, "latest_snippet.npz")
-        print(
-            f"[ModifiedRamsey:continuous] streaming "
-            f"{ModifiedRamsey_params['mr_reps']} shots/chunk -> {cont_dir}\n"
-            f"  duration="
-            f"{'unbounded' if cont_duration_s is None else f'{cont_duration_s} s'}, "
-            f"ss_cal every {ss_recalib_interval_s} s, "
-            f"snippet every {snippet_interval_s} s"
-        )
-
-        run_start_cont = time.time()
-        last_ss_cal_cont = run_start_cont
-        last_snippet_cont = run_start_cont
-        chunk_idx_cont = 0
-        try:
-            while True:
-                now_cont = time.time()
-                if (
-                    cont_duration_s is not None
-                    and (now_cont - run_start_cont) >= cont_duration_s
-                ):
-                    break
-
-                # Periodic ss_cal: recompute the g/e separator (and the active-reset
-                # I-threshold) so they track blob drift over a long run.
-                if (
-                    ss_recalib_interval_s is not None
-                    and ss_recalib_interval_s > 0
-                    and (now_cont - last_ss_cal_cont) >= ss_recalib_interval_s
-                ):
-                    print(
-                        f"[ModifiedRamsey:continuous] ss_cal at "
-                        f"t={now_cont - run_start_cont:.1f} s (before chunk {chunk_idx_cont})"
-                    )
-                    apriori_sep_mr = get_apriori_separator_from_singleshot(
-                        config=config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
-                    )
-                    if mr_use_active_reset or mr_reset_from_readout:
-                        wire_reset_into_mr_cfg(
-                            mr_cfg,
-                            apriori_sep_mr,
-                            ModifiedRamsey_params,
-                            mr_use_active_reset,
-                            mr_reset_from_readout,
-                        )
-                        config_mr = config | mr_cfg
-                    last_ss_cal_cont = time.time()
-
-                # Acquire one uninterrupted chunk (~mr_reps shots).
-                Instance_mr = ModifiedRamsey(
-                    path="ModifiedRamsey",
-                    cfg=config_mr,
-                    soc=soc,
-                    soccfg=soccfg,
-                    outerFolder=outerFolder,
-                )
-                data_mr = ModifiedRamsey.acquire(Instance_mr)
-
-                raw_i_cont = np.ravel(np.array(data_mr["data"]["shots_i"]))
-                raw_q_cont = np.ravel(np.array(data_mr["data"]["shots_q"]))
-
-                if apriori_sep_mr is not None:
-                    g_c = np.array(apriori_sep_mr["g_center"])
-                    e_c = np.array(apriori_sep_mr["e_center"])
-                    mid_c = np.array(apriori_sep_mr["midpoint"])
-                    nrm_c = np.array(apriori_sep_mr["normal"])
-                else:
-                    g_c = e_c = mid_c = nrm_c = np.array([np.nan, np.nan])
-
-                t_since_start = time.time() - run_start_cont
-                snippet_fields = dict(
-                    raw_i=raw_i_cont,
-                    raw_q=raw_q_cont,
-                    g_center=g_c,
-                    e_center=e_c,
-                    midpoint=mid_c,
-                    normal=nrm_c,
-                    chosen_probe_freq=np.array(chosen_probe_freq_cont),
-                    peak_sep=np.array(chosen_peak_sep_cont),
-                    tau_us=np.array(tau_us_cont),
-                    final_voltage=np.array(current_voltage_mr),
-                    chunk_idx=np.array(chunk_idx_cont),
-                    t_since_start_s=np.array(t_since_start),
-                    config=np.array(config_mr, dtype=object),
-                )
-
-                chunk_stamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-                chunk_path = os.path.join(
-                    cont_dir, f"chunk_{chunk_idx_cont:06d}_{chunk_stamp}.npz"
-                )
-                np.savez(chunk_path, **snippet_fields)
-
-                # Overwrite the fixed-path snippet on the time interval.
-                now_after = time.time()
-                if (
-                    snippet_interval_s is not None
-                    and snippet_interval_s > 0
-                    and (now_after - last_snippet_cont) >= snippet_interval_s
-                ):
-                    np.savez(latest_snippet_path, **snippet_fields)
-                    last_snippet_cont = now_after
-                    print(
-                        f"[ModifiedRamsey:continuous] snippet -> latest_snippet.npz "
-                        f"(chunk {chunk_idx_cont}, t={t_since_start:.1f} s)"
-                    )
-
-                chunk_idx_cont += 1
-        except KeyboardInterrupt:
-            print(
-                f"[ModifiedRamsey:continuous] interrupted after {chunk_idx_cont} "
-                f"chunks ({time.time() - run_start_cont:.1f} s)."
-            )
-
-        cont_summary = {
-            "n_chunks": chunk_idx_cont,
-            "mr_reps_per_chunk": ModifiedRamsey_params["mr_reps"],
-            "duration_s": time.time() - run_start_cont,
-            "f_ge": chosen_probe_freq_cont,
-            "df": chosen_peak_sep_cont,
-            "tau_us": tau_us_cont,
-            "final_voltage": current_voltage_mr,
-            "save_dir": cont_dir,
-        }
-        with open(os.path.join(cont_dir, "continuous_summary.json"), "w") as f:
-            json.dump(cont_summary, f, indent=2, default=float)
-        print(f"[ModifiedRamsey:continuous] done: {cont_summary}")
-
-    for cycle_idx_mr in range(0 if continuous_mode_mr else num_cycles_mr):
-        # Delay between cycles (skipped before the first cycle). Placed at the top
-        # so it applies between every pair of consecutive cycles regardless of
-        # which path the previous cycle exited through (including the failure
-        # `continue` further down).
-        if cycle_idx_mr > 0 and inter_cycle_delay_mr > 0:
-            time.sleep(inter_cycle_delay_mr)
+    for cycle_idx_mr in range(num_cycles_mr):
         if ModifiedRamsey_params.get("use_apriori_separator", False):
             if apriori_sep_mr is None or (
                 ss_recalib_n_mr is not None
@@ -2199,28 +1281,8 @@ if RunModifiedRamsey:
         chosen_probe_freq_mr = None
         chosen_peak_sep_mr = None
 
-        if skip_two_tone_mr:
-            # ---------- manual parity-frequency mode ----------
-            # Same f_ge / df mapping as the auto "separated peaks" branch below.
-            chosen_peak_sep_mr = abs(
-                float(upper_parity_freq_mr) - float(lower_parity_freq_mr)
-            )
-            chosen_probe_freq_mr = max(
-                float(lower_parity_freq_mr), float(upper_parity_freq_mr)
-            )
-            success_mr = True
-            print(
-                f"[ModifiedRamsey] Cycle {cycle_idx_mr + 1}: manual parity mode "
-                f"(two-tone search skipped), "
-                f"lower={float(lower_parity_freq_mr):.6f} MHz, "
-                f"upper={float(upper_parity_freq_mr):.6f} MHz, "
-                f"f_ge={chosen_probe_freq_mr:.6f} MHz, "
-                f"df={chosen_peak_sep_mr:.6f} MHz, "
-                f"tau={1.0 / (2.0 * chosen_peak_sep_mr):.4f} us"
-            )
-
-        # ---------- two-tone voltage search (skipped in manual mode) ----------
-        for attempt_idx_mr in range(max_tries_mr if not skip_two_tone_mr else 0):
+        # ---------- two-tone voltage search ----------
+        for attempt_idx_mr in range(max_tries_mr):
             print(
                 f"[ModifiedRamsey] Cycle {cycle_idx_mr + 1}/{num_cycles_mr}, "
                 f"attempt {attempt_idx_mr + 1}/{max_tries_mr}, V={current_voltage_mr:.6f} V"
@@ -2266,35 +1328,18 @@ if RunModifiedRamsey:
             x_pts_mr = np.array(data_specSlice_mr["data"]["x_pts"])
             avgi_mr = np.array(data_specSlice_mr["data"]["avgi"][0][0])
             avgq_mr = np.array(data_specSlice_mr["data"]["avgq"][0][0])
-            # Rotate onto the signal-bearing IQ axis (background-subtracted) instead
-            # of the raw magnitude |I+iQ|^2, which is dominated by the large, noisy
-            # background quadrature and buries the qubit feature.
-            avgamp0_mr = project_iq_signal(avgi_mr, avgq_mr)
+            sig_mr = avgi_mr + 1j * avgq_mr
+            avgamp0_mr = np.abs(sig_mr) ** 2
 
-            # Robust parity-doublet finder: noise-floor-referenced peak detection,
-            # symmetric-pair-about-center selection, sub-bin Lorentzian refinement.
-            doublet_mr = find_parity_doublet(
-                x_pts_mr,
-                avgamp0_mr,
-                center_freq=qubit_frequency_center,
-                min_sep_mhz=ModifiedRamsey_params.get("min_sep_MHz", 0.02),
-                max_sep_mhz=ModifiedRamsey_params.get("max_sep_MHz", None),
-                prominence_snr=ModifiedRamsey_params.get("prominence_snr", 5.0),
-                smooth_window=ModifiedRamsey_params.get("smooth_window", 5),
-                symmetry_tol_mhz=ModifiedRamsey_params.get("symmetry_tol_MHz", None),
-                min_height_balance=ModifiedRamsey_params.get("min_height_balance", 0.3),
-                fit_window_mhz=ModifiedRamsey_params.get("fit_window_mhz", 0.1),
-                refine=True,
+            freq_choice_mr = choose_two_tone_freqs_from_lorentz_or_peaks(
+                data_specSlice_mr,
+                min_sep_mhz=Spec_relevant_params["min_sep_MHz"],
             )
 
-            # peak_info compatible with save_two_tone_plot and the summary file.
-            peak_info_mr = {
-                "peak_inds": doublet_mr["peak_inds"],
-                "peak_freqs": doublet_mr["peak_freqs"],
-                "peak_vals": doublet_mr["peak_vals"],
-                "peak_sep": doublet_mr["peak_sep"],
-                "source": doublet_mr["mode"],
-            }
+            peak_info_mr = freq_choice_mr["peak_info_raw"]
+            peak_info_mr["peak_freqs"] = freq_choice_mr["freqs"]
+            peak_info_mr["peak_sep"] = freq_choice_mr["peak_sep"]
+            peak_info_mr["source"] = freq_choice_mr["source"]
 
             save_base_mr = save_two_tone_plot(
                 x_pts=x_pts_mr,
@@ -2305,25 +1350,14 @@ if RunModifiedRamsey:
                 current_voltage=current_voltage_mr,
                 attempt_idx=attempt_idx_mr + cycle_idx_mr * max_tries_mr,
                 save_dir=save_dir_mr,
-                qubit_gain=config.get("qubit_gain"),
-                qubit_length=config.get("qubit_length"),
-                center_freq=qubit_frequency_center,
-                fit=doublet_mr.get("fit"),
-                live_display=ModifiedRamsey_params.get("live_display", False),
-                live_pause=ModifiedRamsey_params.get("live_pause", 0.05),
             )
 
             with open(save_base_mr + "_summary.txt", "w") as f:
                 f.write(f"cycle_idx: {cycle_idx_mr}\n")
                 f.write(f"attempt_idx: {attempt_idx_mr}\n")
                 f.write(f"current_voltage: {current_voltage_mr:.9f}\n")
-                f.write(f"mode: {doublet_mr['mode']}\n")
-                f.write(f"lower: {doublet_mr['lower']}\n")
-                f.write(f"upper: {doublet_mr['upper']}\n")
-                f.write(f"center: {doublet_mr['center']}\n")
-                f.write(f"peak_sep: {doublet_mr['peak_sep']}\n")
-                f.write(f"noise_sigma: {doublet_mr['noise_sigma']}\n")
-                f.write(f"candidates: {doublet_mr['candidates']}\n")
+                f.write(f"peak_freqs: {peak_info_mr['peak_freqs']}\n")
+                f.write(f"peak_sep: {peak_info_mr['peak_sep']}\n")
                 f.write(f"df_required: {df_required_mr}\n")
 
             center_peak_tol_mhz = ModifiedRamsey_params.get("center_peak_tol_mhz", 0.05)
@@ -2331,46 +1365,58 @@ if RunModifiedRamsey:
                 "center_peak_df_for_tau", df_required_mr
             )
 
-            doublet_centered_mr = (
-                doublet_mr["center"] is not None
-                and abs(doublet_mr["center"] - qubit_frequency_center)
-                <= center_peak_tol_mhz
-            )
+            peak_freqs_mr = np.asarray(peak_info_mr.get("peak_freqs", []), dtype=float)
 
-            if (
-                doublet_mr["mode"] == "doublet"
-                and doublet_mr["peak_sep"] is not None
-                and doublet_mr["peak_sep"] >= df_required_mr
-            ):
-                # Parity mode: a resolved doublet split widely enough for Ramsey.
-                chosen_probe_freq_mr = float(doublet_mr["upper"])
-                chosen_peak_sep_mr = float(doublet_mr["peak_sep"])
+            highest_peak_freq_mr = None
+            highest_peak_is_centered_mr = False
+
+            if len(peak_freqs_mr) > 0:
+                # Use the largest response in avgamp0 as the "highest peak".
+                peak_indices_mr = [
+                    int(np.argmin(np.abs(x_pts_mr - f))) for f in peak_freqs_mr
+                ]
+                peak_heights_mr = np.asarray(
+                    [avgamp0_mr[idx] for idx in peak_indices_mr]
+                )
+                highest_peak_freq_mr = float(
+                    peak_freqs_mr[int(np.argmax(peak_heights_mr))]
+                )
+
+                highest_peak_is_centered_mr = (
+                    abs(highest_peak_freq_mr - qubit_frequency_center)
+                    <= center_peak_tol_mhz
+                )
+
+            if highest_peak_is_centered_mr:
+                # Calibration mode: run MR even if there is not enough peak splitting.
+                chosen_probe_freq_mr = highest_peak_freq_mr
+                chosen_peak_sep_mr = float(center_peak_df_for_tau)
 
                 print(
-                    f"[ModifiedRamsey] Cycle {cycle_idx_mr + 1}: doublet found, "
-                    f"lower={doublet_mr['lower']:.6f} MHz, "
-                    f"upper={doublet_mr['upper']:.6f} MHz, "
-                    f"sep={chosen_peak_sep_mr:.6f} MHz, "
+                    f"[ModifiedRamsey] Cycle {cycle_idx_mr + 1}: centered highest peak found, "
+                    f"highest_peak={highest_peak_freq_mr:.6f} MHz, "
+                    f"center={qubit_frequency_center:.6f} MHz, "
+                    f"|diff|={abs(highest_peak_freq_mr - qubit_frequency_center):.6f} MHz <= "
+                    f"{center_peak_tol_mhz:.6f} MHz. Running calibration Ramsey with "
                     f"f_ge={chosen_probe_freq_mr:.6f} MHz, "
+                    f"df_for_tau={chosen_peak_sep_mr:.6f} MHz, "
                     f"tau={1.0 / (2.0 * chosen_peak_sep_mr):.4f} us"
                 )
 
                 success_mr = True
                 break
 
-            elif doublet_centered_mr:
-                # Calibration mode: feature is centered but not split enough; run
-                # Ramsey at the center with the configured df-for-tau.
-                chosen_probe_freq_mr = float(doublet_mr["center"])
-                chosen_peak_sep_mr = float(center_peak_df_for_tau)
+            elif (
+                peak_info_mr["peak_sep"] is not None
+                and peak_info_mr["peak_sep"] >= df_required_mr
+            ):
+                # Normal parity mode: require two sufficiently separated peaks.
+                chosen_probe_freq_mr = float(np.max(peak_info_mr["peak_freqs"]))
+                chosen_peak_sep_mr = float(peak_info_mr["peak_sep"])
 
                 print(
-                    f"[ModifiedRamsey] Cycle {cycle_idx_mr + 1}: centered feature "
-                    f"(mode={doublet_mr['mode']}), center={doublet_mr['center']:.6f} MHz, "
-                    f"|diff|={abs(doublet_mr['center'] - qubit_frequency_center):.6f} MHz <= "
-                    f"{center_peak_tol_mhz:.6f} MHz. Running calibration Ramsey with "
-                    f"f_ge={chosen_probe_freq_mr:.6f} MHz, "
-                    f"df_for_tau={chosen_peak_sep_mr:.6f} MHz, "
+                    f"[ModifiedRamsey] Cycle {cycle_idx_mr + 1}: separated peaks found, "
+                    f"sep={chosen_peak_sep_mr:.6f} MHz, f_ge={chosen_probe_freq_mr:.6f} MHz, "
                     f"tau={1.0 / (2.0 * chosen_peak_sep_mr):.4f} us"
                 )
 
@@ -2416,33 +1462,13 @@ if RunModifiedRamsey:
             "pi2_gain": pi2_gain,
             "pi_gain": qubit_gain,
             "use_pi_pulse": ModifiedRamsey_params.get("use_pi_pulse", False),
-            "flip_final_pi2": ModifiedRamsey_params.get("flip_final_pi2", False),
-            "symmetric_ramsey": ModifiedRamsey_params.get("symmetric_ramsey", False),
-            "symmetric_drive_freq": ModifiedRamsey_params.get(
-                "symmetric_drive_freq", None
-            ),
             "sigma": qubit_sigma,
             "flattop_length": qubit_flattop,
             "reps": ModifiedRamsey_params["mr_reps"],
             "rounds": 1,
             "current_voltage": current_voltage_mr,
             "Qubit_number": Qubit_Readout,
-            "iq_plot_alpha": iq_plot_alpha_mr,
         }
-
-        # Wire the chosen feedback-reset strategy into the real Ramsey run. res_phase
-        # was already rotated above so |g>/|e> separate along I; the I-threshold is
-        # derived from the (rotated-frame) apriori separator so it tracks blob drift
-        # across recalibrations. reset_from_ramsey_readout takes precedence over
-        # use_active_reset (see wire_reset_into_mr_cfg).
-        wire_reset_into_mr_cfg(
-            mr_cfg,
-            apriori_sep_mr,
-            ModifiedRamsey_params,
-            mr_use_active_reset,
-            mr_reset_from_readout,
-        )
-
         config_mr = config | mr_cfg
 
         Instance_mr = ModifiedRamsey(
@@ -2522,14 +1548,14 @@ if RunModifiedRamsey:
             raw_i_mr[binary_states_mr == 0],
             raw_q_mr[binary_states_mr == 0],
             ".",
-            alpha=iq_plot_alpha_mr,
+            alpha=0.5,
             label="Assigned 0",
         )
         plt.plot(
             raw_i_mr[binary_states_mr == 1],
             raw_q_mr[binary_states_mr == 1],
             ".",
-            alpha=iq_plot_alpha_mr,
+            alpha=0.5,
             label="Assigned 1",
         )
         plt.plot(c0_mr[0], c0_mr[1], "o", markersize=10, label="SingleShot g center")
@@ -2623,453 +1649,11 @@ if RunModifiedRamsey:
             }
         )
 
-    if not continuous_mode_mr:
-        summary_path_mr = os.path.join(
-            save_dir_mr,
-            f"CycleSummary_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.json",
-        )
-        with open(summary_path_mr, "w") as f:
-            json.dump(cycle_summary_mr, f, indent=2, default=float)
-
-if RunModifiedRamseyCalib:
-    # Fixed-frequency tau sweep using the ModifiedRamsey sequence. tau is set via
-    # df (tau = 1/(2*df)); f_ge is held at the Q2 value. Sequence/reset parameters
-    # are inherited from ModifiedRamsey_params; only tau (df) and f_ge change.
-    date_tag_mrcal = datetime.now().strftime("%Y_%m_%d")
-    save_dir_mrcal = os.path.join(outerFolder, "ModifiedRamsey_Calib", date_tag_mrcal)
-    os.makedirs(save_dir_mrcal, exist_ok=True)
-
-    df_start_cal = ModifiedRamseyCalib_params["df_start_MHz"]
-    df_stop_cal = ModifiedRamseyCalib_params["df_stop_MHz"]
-    n_tau_cal = int(ModifiedRamseyCalib_params["n_tau"])
-    spacing_cal = ModifiedRamseyCalib_params.get("tau_spacing", "linear_tau")
-
-    # tau = 1/(2*df). df_start (larger df) -> smaller tau; df_stop -> larger tau.
-    tau_start_cal = 1.0 / (2.0 * df_start_cal)
-    tau_stop_cal = 1.0 / (2.0 * df_stop_cal)
-
-    if spacing_cal == "linear_df":
-        df_list_cal = np.linspace(df_start_cal, df_stop_cal, n_tau_cal)
-        tau_list_cal = 1.0 / (2.0 * df_list_cal)
-    elif spacing_cal == "log_tau":
-        tau_list_cal = np.geomspace(tau_start_cal, tau_stop_cal, n_tau_cal)
-        df_list_cal = 1.0 / (2.0 * tau_list_cal)
-    else:  # "linear_tau" (default)
-        tau_list_cal = np.linspace(tau_start_cal, tau_stop_cal, n_tau_cal)
-        df_list_cal = 1.0 / (2.0 * tau_list_cal)
-
-    f_ge_cal = qubit_frequency_center  # qubit drive frequency fixed at the Q2 value
-
-    # symmetric_ramsey: None -> inherit from ModifiedRamsey_params; else use the
-    # calib override (default False, so the drive stays exactly on f_ge = Q2).
-    symmetric_ramsey_cal = ModifiedRamseyCalib_params.get("symmetric_ramsey", False)
-    if symmetric_ramsey_cal is None:
-        symmetric_ramsey_cal = ModifiedRamsey_params.get("symmetric_ramsey", False)
-
-    # symmetric_drive_freq: None -> inherit from ModifiedRamsey_params; else use the
-    # calib override (pins the symmetric-mode drive at the charge-dispersion center
-    # so it stays fixed across the tau sweep).
-    symmetric_drive_freq_cal = ModifiedRamseyCalib_params.get(
-        "symmetric_drive_freq", None
+    summary_path_mr = os.path.join(
+        save_dir_mr, f"CycleSummary_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.json"
     )
-    if symmetric_drive_freq_cal is None:
-        symmetric_drive_freq_cal = ModifiedRamsey_params.get(
-            "symmetric_drive_freq", None
-        )
-
-    # ── Build the symmetric-drive-frequency sweep axis (2D mode) ──────────────
-    # sweep_drive_freq=True turns this into a 2D (drive freq) x (tau) sweep: for
-    # each drive frequency the full tau list is run. The swept value sets
-    # cfg["symmetric_drive_freq"], so it only takes effect in symmetric mode.
-    sweep_drive_cal = bool(ModifiedRamseyCalib_params.get("sweep_drive_freq", False))
-    if sweep_drive_cal:
-        if not symmetric_ramsey_cal:
-            print(
-                "[MRCalib] WARNING: sweep_drive_freq=True needs symmetric_ramsey "
-                "for the swept value to take effect; forcing symmetric_ramsey=True."
-            )
-            symmetric_ramsey_cal = True
-        drive_list_explicit_cal = ModifiedRamseyCalib_params.get(
-            "drive_freq_list_MHz", None
-        )
-        if drive_list_explicit_cal is not None:
-            drive_list_cal = [float(f) for f in drive_list_explicit_cal]
-        else:
-            drive_center_cal = ModifiedRamseyCalib_params.get(
-                "drive_freq_center_MHz", None
-            )
-            if drive_center_cal is None:
-                drive_center_cal = (
-                    float(symmetric_drive_freq_cal)
-                    if symmetric_drive_freq_cal is not None
-                    else float(qubit_frequency_center)
-                )
-            drive_span_cal = float(
-                ModifiedRamseyCalib_params.get("drive_freq_span_MHz", 0.3)
-            )
-            n_drive_freq_cal = int(ModifiedRamseyCalib_params.get("n_drive_freq", 11))
-            drive_list_cal = list(
-                np.linspace(
-                    float(drive_center_cal) - drive_span_cal / 2.0,
-                    float(drive_center_cal) + drive_span_cal / 2.0,
-                    n_drive_freq_cal,
-                )
-            )
-    else:
-        # 1D tau sweep (unchanged): one drive setting, possibly None (-> the
-        # program derives f_ge - df/2 in symmetric mode).
-        drive_list_cal = [symmetric_drive_freq_cal]
-    n_drive_cal = len(drive_list_cal)
-
-    if sweep_drive_cal:
-        print(
-            f"[MRCalib] 2D sweep: {n_drive_cal} drive freqs x {n_tau_cal} tau pts. "
-            f"drive {min(drive_list_cal):.6f}-{max(drive_list_cal):.6f} MHz; "
-            f"tau {tau_start_cal:.3f}-{tau_stop_cal:.3f} us "
-            f"(df {df_start_cal * 1e3:.1f}-{df_stop_cal * 1e3:.1f} kHz), "
-            f"symmetric_ramsey={symmetric_ramsey_cal}"
-        )
-    else:
-        print(
-            f"[MRCalib] sweeping {n_tau_cal} tau points "
-            f"({tau_start_cal:.3f}-{tau_stop_cal:.3f} us; "
-            f"df {df_start_cal * 1e3:.1f}-{df_stop_cal * 1e3:.1f} kHz), "
-            f"f_ge fixed at {f_ge_cal:.6f} MHz, symmetric_ramsey={symmetric_ramsey_cal}"
-        )
-
-    # Optional fixed bias for the calibration (else stay where the Yoko is).
-    voltage_cal = ModifiedRamseyCalib_params.get("voltage", None)
-    if voltage_cal is not None:
-        print(f"[MRCalib] ramping Yoko to {float(voltage_cal):.6f} V")
-        ramp_to(yoko, float(voltage_cal))
-    current_voltage_cal = float(yoko.query(":SOUR:LEV?"))
-
-    # Reset strategy (same flags as ModifiedRamsey; readout-reset takes precedence).
-    mrcal_reset_from_readout = ModifiedRamsey_params.get(
-        "reset_from_ramsey_readout", False
-    )
-    mrcal_use_active_reset = (
-        ModifiedRamsey_params.get("use_active_reset", False)
-        and not mrcal_reset_from_readout
-    )
-
-    # res_phase rotation + I-threshold calibration (needed for either reset path).
-    if mrcal_use_active_reset or mrcal_reset_from_readout:
-        calibrate_active_reset_readout(
-            config=config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
-        )
-
-    # Single-shot g/e separator for shot classification (and reset threshold).
-    apriori_sep_cal = get_apriori_separator_from_singleshot(
-        config=config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
-    )
-
-    average_n_shots_cal = int(
-        ModifiedRamseyCalib_params.get(
-            "average_n_shots", ModifiedRamsey_params.get("average_n_shots", 25)
-        )
-    )
-    iq_plot_alpha_cal = ModifiedRamsey_params.get("iq_plot_alpha", 0.5)
-    mr_reps_cal = int(
-        ModifiedRamseyCalib_params.get("mr_reps", ModifiedRamsey_params["mr_reps"])
-    )
-
-    # 2D result grids: rows = drive frequency, cols = tau.
-    mean_excited_cal = np.full((n_drive_cal, n_tau_cal), np.nan)
-    mean_i_cal = np.full((n_drive_cal, n_tau_cal), np.nan)
-    mean_q_cal = np.full((n_drive_cal, n_tau_cal), np.nan)
-    # Averaged excited-population time traces + matching time axes per (drive,tau).
-    excited_avg_all_cal = [[None] * n_tau_cal for _ in range(n_drive_cal)]
-    elapsed_avg_ms_all_cal = [[None] * n_tau_cal for _ in range(n_drive_cal)]
-
-    # Per-(drive,tau) point PNGs can number in the hundreds for a 2D sweep; off by
-    # default when sweeping the drive, on for a plain tau sweep (see params).
-    per_point_plots_cal = bool(
-        ModifiedRamseyCalib_params.get("per_point_plots", not sweep_drive_cal)
-    )
-
-    timestamp_cal = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    base_cal = os.path.join(save_dir_mrcal, f"MRCalib_{timestamp_cal}")
-
-    for i_drive_cal in range(n_drive_cal):
-        drive_i_cal = drive_list_cal[i_drive_cal]
-        drive_tag_cal = (
-            "derived (f_ge - df/2)"
-            if drive_i_cal is None
-            else f"{float(drive_i_cal):.6f} MHz"
-        )
-        for i_tau_cal in range(n_tau_cal):
-            tau_i_cal = float(tau_list_cal[i_tau_cal])
-            df_i_cal = float(df_list_cal[i_tau_cal])
-            print(
-                f"[MRCalib] drive {i_drive_cal + 1}/{n_drive_cal} "
-                f"({drive_tag_cal}), tau {i_tau_cal + 1}/{n_tau_cal}: "
-                f"tau={tau_i_cal:.3f} us (df={df_i_cal * 1e3:.2f} kHz)"
-            )
-
-            mr_cfg = {
-                "f_ge": f_ge_cal,
-                "df": df_i_cal,
-                "pi2_gain": pi2_gain,
-                "pi_gain": qubit_gain,
-                "use_pi_pulse": ModifiedRamsey_params.get("use_pi_pulse", False),
-                "flip_final_pi2": ModifiedRamsey_params.get("flip_final_pi2", False),
-                "symmetric_ramsey": symmetric_ramsey_cal,
-                "symmetric_drive_freq": (
-                    None if drive_i_cal is None else float(drive_i_cal)
-                ),
-                "sigma": qubit_sigma,
-                "flattop_length": qubit_flattop,
-                "reps": mr_reps_cal,
-                "rounds": 1,
-                "current_voltage": current_voltage_cal,
-                "Qubit_number": Qubit_Readout,
-                "iq_plot_alpha": iq_plot_alpha_cal,
-            }
-            wire_reset_into_mr_cfg(
-                mr_cfg,
-                apriori_sep_cal,
-                ModifiedRamsey_params,
-                mrcal_use_active_reset,
-                mrcal_reset_from_readout,
-            )
-            config_cal = config | mr_cfg
-
-            Instance_cal = ModifiedRamsey(
-                path="ModifiedRamsey_Calib",
-                cfg=config_cal,
-                soc=soc,
-                soccfg=soccfg,
-                outerFolder=outerFolder,
-            )
-            data_cal = ModifiedRamsey.acquire(Instance_cal)
-
-            raw_i_cal = np.ravel(np.array(data_cal["data"]["shots_i"]))
-            raw_q_cal = np.ravel(np.array(data_cal["data"]["shots_q"]))
-
-            classification_cal = classify_and_average_iq(
-                raw_i=raw_i_cal,
-                raw_q=raw_q_cal,
-                g_center=apriori_sep_cal["g_center"],
-                e_center=apriori_sep_cal["e_center"],
-                average_n_shots=average_n_shots_cal,
-            )
-            binary_cal = np.asarray(classification_cal["binary_states"])
-            excited_avg_cal = classification_cal["excited_avg"]
-            normal_cal = np.asarray(classification_cal["normal"])
-            midpoint_cal = np.asarray(classification_cal["midpoint"])
-            mean_excited_cal[i_drive_cal, i_tau_cal] = float(np.mean(binary_cal))
-            mean_i_cal[i_drive_cal, i_tau_cal] = float(np.mean(raw_i_cal))
-            mean_q_cal[i_drive_cal, i_tau_cal] = float(np.mean(raw_q_cal))
-
-            # Averaged excited-population time trace (same construction as the
-            # ModifiedRamsey per-cycle "_averaged_population" output): block-average
-            # consecutive shots in groups of average_n_shots and lay them on a time
-            # axis built from the per-rep period (tau-dependent).
-            pulse_length_us_cal = qubit_sigma * 4
-            n_qubit_pulses_cal = 3 if config_cal.get("use_pi_pulse", False) else 2
-            rep_period_us_cal = (
-                n_qubit_pulses_cal * pulse_length_us_cal
-                + tau_i_cal
-                + 0.05
-                + config_cal["readout_length"]
-            )
-            elapsed_avg_ms_cal = (
-                np.arange(len(excited_avg_cal))
-                * average_n_shots_cal
-                * rep_period_us_cal
-                * 1e-3
-            )
-            excited_avg_all_cal[i_drive_cal][i_tau_cal] = np.asarray(excited_avg_cal)
-            elapsed_avg_ms_all_cal[i_drive_cal][i_tau_cal] = np.asarray(
-                elapsed_avg_ms_cal
-            )
-
-            if not per_point_plots_cal:
-                continue
-
-            point_stub_cal = (
-                f"_drv{i_drive_cal:03d}_tau{i_tau_cal:03d}_{tau_i_cal:.3f}us"
-            )
-
-            plt.figure(figsize=(10, 4))
-            plt.plot(elapsed_avg_ms_cal, excited_avg_cal, "o-", linewidth=1.5)
-            plt.xlabel("Time since start (ms)")
-            plt.ylabel("Averaged excited-state population")
-            plt.ylim(-0.05, 1.05)
-            plt.title(
-                f"MR calib averaged trace: tau={tau_i_cal:.3f} us "
-                f"(df={df_i_cal * 1e3:.2f} kHz)\n"
-                f"f_drive={drive_tag_cal}, {average_n_shots_cal} shots/point, "
-                f"{mr_reps_cal} reps"
-            )
-            plt.tight_layout()
-            plt.savefig(
-                base_cal + point_stub_cal + "_averaged_population.png",
-                dpi=300,
-                bbox_inches="tight",
-            )
-            plt.close()
-
-            # SingleShot IQ blobs + g/e separator for this trace: raw shots colored
-            # by assignment, with the calibrated g/e centers and separator overlaid.
-            c0_cal = apriori_sep_cal["g_center"]
-            c1_cal = apriori_sep_cal["e_center"]
-            I_min_cal, I_max_cal = raw_i_cal.min(), raw_i_cal.max()
-            Q_min_cal, Q_max_cal = raw_q_cal.min(), raw_q_cal.max()
-            I_pad_cal = 0.05 * (I_max_cal - I_min_cal if I_max_cal > I_min_cal else 1.0)
-            Q_pad_cal = 0.05 * (Q_max_cal - Q_min_cal if Q_max_cal > Q_min_cal else 1.0)
-            I_line_cal = np.linspace(I_min_cal - I_pad_cal, I_max_cal + I_pad_cal, 400)
-            vertical_line_cal = np.abs(normal_cal[1]) < 1e-12
-            if not vertical_line_cal:
-                Q_line_cal = midpoint_cal[1] - (normal_cal[0] / normal_cal[1]) * (
-                    I_line_cal - midpoint_cal[0]
-                )
-
-            plt.figure(figsize=(6, 6))
-            plt.plot(
-                raw_i_cal[binary_cal == 0],
-                raw_q_cal[binary_cal == 0],
-                ".",
-                alpha=iq_plot_alpha_cal,
-                label="Assigned 0",
-            )
-            plt.plot(
-                raw_i_cal[binary_cal == 1],
-                raw_q_cal[binary_cal == 1],
-                ".",
-                alpha=iq_plot_alpha_cal,
-                label="Assigned 1",
-            )
-            plt.plot(
-                c0_cal[0], c0_cal[1], "o", markersize=10, label="SingleShot g center"
-            )
-            plt.plot(
-                c1_cal[0], c1_cal[1], "o", markersize=10, label="SingleShot e center"
-            )
-            if vertical_line_cal:
-                plt.axvline(
-                    midpoint_cal[0], linestyle="--", linewidth=2, label="g/e separator"
-                )
-            else:
-                plt.plot(
-                    I_line_cal, Q_line_cal, "--", linewidth=2, label="g/e separator"
-                )
-            plt.xlabel("I")
-            plt.ylabel("Q")
-            plt.xlim(I_min_cal - I_pad_cal, I_max_cal + I_pad_cal)
-            plt.ylim(Q_min_cal - Q_pad_cal, Q_max_cal + Q_pad_cal)
-            plt.gca().set_aspect("equal", adjustable="box")
-            plt.title(
-                f"MR calib IQ: tau={tau_i_cal:.3f} us (df={df_i_cal * 1e3:.2f} kHz)\n"
-                f"f_drive={drive_tag_cal}, V={current_voltage_cal:.6f} V"
-            )
-            plt.legend()
-            plt.tight_layout()
-            plt.savefig(
-                base_cal + point_stub_cal + "_iq_labeled.png",
-                dpi=300,
-                bbox_inches="tight",
-            )
-            plt.close()
-
-    # Per-drive population-vs-tau curves.
-    for i_drive_cal in range(n_drive_cal):
-        drive_i_cal = drive_list_cal[i_drive_cal]
-        drive_tag_cal = (
-            "derived (f_ge - df/2)"
-            if drive_i_cal is None
-            else f"{float(drive_i_cal):.6f} MHz"
-        )
-        plt.figure(figsize=(8, 5))
-        plt.plot(tau_list_cal, mean_excited_cal[i_drive_cal], "o-")
-        plt.xlabel("tau (us)")
-        plt.ylabel("Excited-state population")
-        plt.ylim(-0.05, 1.05)
-        plt.title(
-            f"Modified Ramsey calibration: population vs tau\n"
-            f"f_drive={drive_tag_cal} (Q{Qubit_Pulse}), V={current_voltage_cal:.6f} V, "
-            f"{mr_reps_cal} reps/pt"
-        )
-        plt.tight_layout()
-        suffix_cal = (
-            "_pop_vs_tau.png"
-            if n_drive_cal == 1
-            else f"_drv{i_drive_cal:03d}_pop_vs_tau.png"
-        )
-        plt.savefig(base_cal + suffix_cal, dpi=300, bbox_inches="tight")
-        plt.close()
-
-    # 2D chevron heatmap: excited population vs (symmetric drive freq, tau). The
-    # near-vertical column where P(e) is flat / pinned ~0.5 across tau marks the
-    # zero-detuning (true qubit/parity center) drive frequency.
-    if n_drive_cal > 1:
-        drive_arr_cal = np.array([float(f) for f in drive_list_cal])
-
-        def _centers_to_edges(centers):
-            centers = np.asarray(centers, dtype=float)
-            if len(centers) == 1:
-                return np.array([centers[0] - 0.5, centers[0] + 0.5])
-            mids = 0.5 * (centers[1:] + centers[:-1])
-            first = centers[0] - (mids[0] - centers[0])
-            last = centers[-1] + (centers[-1] - mids[-1])
-            return np.concatenate([[first], mids, [last]])
-
-        tau_edges_cal = _centers_to_edges(tau_list_cal)
-        drive_edges_cal = _centers_to_edges(drive_arr_cal)
-
-        plt.figure(figsize=(9, 6))
-        pcm_cal = plt.pcolormesh(
-            tau_edges_cal,
-            drive_edges_cal,
-            mean_excited_cal,
-            shading="auto",
-            cmap="viridis",
-            vmin=0.0,
-            vmax=1.0,
-        )
-        plt.colorbar(pcm_cal, label="Excited-state population")
-        plt.xlabel("tau (us)")
-        plt.ylabel("Symmetric drive frequency (MHz)")
-        plt.title(
-            f"Modified Ramsey calibration chevron: P(e) vs (drive, tau)\n"
-            f"Q{Qubit_Pulse}, V={current_voltage_cal:.6f} V, {mr_reps_cal} reps/pt"
-        )
-        plt.tight_layout()
-        plt.savefig(base_cal + "_pop_vs_drive_tau.png", dpi=300, bbox_inches="tight")
-        plt.close()
-
-    drive_save_cal = np.array(
-        [np.nan if f is None else float(f) for f in drive_list_cal]
-    )
-    np.savez(
-        base_cal + ".npz",
-        tau_list=np.array(tau_list_cal),
-        df_list=np.array(df_list_cal),
-        drive_list=drive_save_cal,
-        sweep_drive_freq=np.array(sweep_drive_cal),
-        mean_excited=np.array(mean_excited_cal),
-        mean_i=np.array(mean_i_cal),
-        mean_q=np.array(mean_q_cal),
-        excited_avg_all=np.array(excited_avg_all_cal, dtype=object),
-        elapsed_avg_ms_all=np.array(elapsed_avg_ms_all_cal, dtype=object),
-        f_ge=np.array(f_ge_cal),
-        voltage=np.array(current_voltage_cal),
-        mr_reps=np.array(mr_reps_cal),
-        average_n_shots=np.array(average_n_shots_cal),
-        symmetric_ramsey=np.array(symmetric_ramsey_cal),
-        symmetric_drive_freq=np.array(
-            np.nan
-            if symmetric_drive_freq_cal is None
-            else float(symmetric_drive_freq_cal)
-        ),
-        g_center=np.array(apriori_sep_cal["g_center"]),
-        e_center=np.array(apriori_sep_cal["e_center"]),
-    )
-    with open(base_cal + "_config.json", "w") as f:
-        json.dump(ModifiedRamseyCalib_params, f, indent=2, default=float)
-
-    print(f"[MRCalib] done -> {base_cal}.npz")
+    with open(summary_path_mr, "w") as f:
+        json.dump(cycle_summary_mr, f, indent=2, default=float)
 
 if RunModifiedRamsey_Control:
     save_dir_mrc = os.path.join(outerFolder, "ModifiedRamsey_Control")
@@ -3733,7 +2317,7 @@ if RunAmplitudeRabi:
             "rounds": Amplitude_Rabi_params["rounds"],
             "sigma": qubit_sigma,
             "f_ge": Amplitude_Rabi_params["qubit_freq"],
-            "relax_delay": 15000,  # us ≈ 3*T1 (T1 ≈ 5 ms)
+            "relax_delay": 8000,
             "flattop_length": qubit_flattop,
         }
         config = (
@@ -3747,7 +2331,7 @@ if RunAmplitudeRabi:
             outerFolder=outerFolder,
         )
         dAmpRabi = AmplitudeRabiFF_N.acquire(iAmpRabi)
-        AmplitudeRabiFF_N.display(iAmpRabi, dAmpRabi, plotDisp=True, figNum=2, fit=fit)
+        AmplitudeRabiFF_N.display(iAmpRabi, dAmpRabi, plotDisp=True, figNum=2)
         AmplitudeRabiFF_N.save_data(iAmpRabi, dAmpRabi)
         AmplitudeRabiFF_N.save_config(iAmpRabi)
     else:
@@ -4156,12 +2740,8 @@ if RunChargeSweep:
         x_pts = np.array(data_specSlice["data"]["x_pts"])
         avgi = np.array(data_specSlice["data"]["avgi"][0][0])
         avgq = np.array(data_specSlice["data"]["avgq"][0][0])
-        # Rotate onto the signal-bearing IQ axis (background-subtracted) instead of
-        # the raw magnitude |I+iQ|^2: the magnitude is dominated by the large, noisy
-        # background quadrature, which both buries per-slice peaks and washes out the
-        # charge-sweep heatmap. The projection gives each slice a ~0 baseline with the
-        # qubit feature as a positive bump.
-        avgamp0 = project_iq_signal(avgi, avgq)
+        sig = avgi + 1j * avgq
+        avgamp0 = np.abs(sig) ** 2
         # find up to two peaks with a minimum spacing in x-units
         min_spacing = 0.05  # same units as x_pts
         dx = np.mean(np.diff(x_pts))
@@ -4203,7 +2783,7 @@ if RunChargeSweep:
                 ],
             )
             cbar = fig.colorbar(im, ax=ax)
-            cbar.set_label("rotated IQ projection")
+            cbar.set_label("|I + iQ|^2")
 
             ax.set_xlabel("Frequency")
             ax.set_ylabel("Voltage")
@@ -4232,18 +2812,6 @@ if RunChargeSweep:
         voltage_pts=voltage_pts,
     )
 
-    # Build and save the charge-dispersion curve (qubit frequency vs gate
-    # voltage) from the projected heatmap: per-voltage Lorentzian peak fit with
-    # argmax fallback, plus the heatmap+overlay figure. Writes
-    # <stem>_ChargeDispersionCurve.png/.npz next to the heatmap.
-    analyze_charge_dispersion(
-        avgamp_map=avgamp_map,
-        x_pts=x_pts,
-        voltage_pts=voltage_pts,
-        save_base=Instance_specSlice.fname[:-3] + "_",
-        plotDisp=True,
-    )
-
     plt.ioff()
     plt.close(fig)
 
@@ -4260,12 +2828,7 @@ UpdateConfig = {
     ###### cavity
     # "pulse_freq": resonator_frequency_center,  # [MHz] actual frequency is this number + "cavity_LO"
     "read_pulse_style": "const",  # --Fixed
-    # Drive BOTH the ADC integration window ("readout_length") and the resonator
-    # readout tone duration ("length") from SS_params["Readout_Time"]. Previously
-    # "length" was not set here, so it fell back to BaseConfig ("length": 30) and
-    # the readout tone ignored Readout_Time.
-    "readout_length": SS_params["Readout_Time"],  # us – ADC integration window
-    "length": SS_params["Readout_Time"],  # us – resonator readout tone duration
+    "readout_length": SS_params["Readout_Time"],  # us (length of the pulse applied)
     "adc_trig_offset": SS_params["ADC_Offset"],
     "pi2_SS": SS_params["pi2_SS"],
     # "pulse_gain": cavity_gain, # [DAC units]
@@ -4460,408 +3023,7 @@ if RunAutoCoherence:
     )
     print("[AutoCoherence] Results:", auto_results)
 
-# ── Zero-span charge-parity switching measurement ───────────────────────────
-# Step 1 (optional): park the qubit drive at one parity-doublet peak.
-# Step 2 (optional): calibrate a g/e single-shot separator for apriori
-#                    classification.
-# Step 3: build the ZeroSpanParity cfg from BaseConfig channel routing + the
-#         active qubit's tuned readout/drive.
-# Step 4: acquire (chunked for long strobe records).
-# Step 5: offline analysis -> bits, switch rate, bursts, dwell stats, plots.
-if RunZeroSpanParity:
-    zsp_outerFolder = outerFolder + "ZeroSpanParity/"
-    os.makedirs(zsp_outerFolder, exist_ok=True)
-
-    # ---- Step 1: optional parity-doublet frequency pre-calibration ----------
-    if ZSP_RecalibrateParityFreqs:
-        spec_cfg = config.copy()
-        spec_cfg["reps"] = ZSP_ParitySpec_params["reps"]
-        spec_cfg["rounds"] = ZSP_ParitySpec_params["rounds"]
-        spec_cfg["relax_delay"] = ZSP_ParitySpec_params["relax_delay"]
-        spec_cfg["Gauss"] = ZSP_ParitySpec_params["Gauss"]
-        spec_cfg["sigma"] = ZSP_ParitySpec_params["sigma"]
-        spec_cfg["qubit_gain"] = ZSP_ParitySpec_params["gain"]
-        spec_cfg["qubit_length"] = ZSP_ParitySpec_params["qubit_length"]
-        spec_cfg["qubit_pulse_style"] = "const"
-        spec_cfg["SpecSpan"] = ZSP_ParitySpec_params["SpecSpan"]
-        spec_cfg["SpecNumPoints"] = ZSP_ParitySpec_params["SpecNumPoints"]
-        spec_cfg["step"] = 2 * spec_cfg["SpecSpan"] / spec_cfg["SpecNumPoints"]
-        spec_cfg["start"] = qubit_frequency_center - spec_cfg["SpecSpan"]
-        spec_cfg["expts"] = spec_cfg["SpecNumPoints"]
-        spec_cfg.setdefault("current_voltage", start_voltage)
-
-        Instance_paritySpec = QubitSpecSliceFF(
-            path="ZeroSpanParity_Spec",
-            cfg=spec_cfg,
-            soc=soc,
-            soccfg=soccfg,
-            outerFolder=zsp_outerFolder,
-        )
-        data_paritySpec = QubitSpecSliceFF.acquire(Instance_paritySpec)
-        QubitSpecSliceFF.display(
-            Instance_paritySpec,
-            data_paritySpec,
-            plotDisp=False,
-            figNum=2,
-            min_sep=ZSP_ParitySpec_params["min_sep_MHz"],
-            fit_window_mhz=ZSP_ParitySpec_params["fit_window_mhz"],
-            prominent_ratio=ZSP_ParitySpec_params["prominent_ratio"],
-        )
-        QubitSpecSliceFF.save_data(Instance_paritySpec, data_paritySpec)
-        QubitSpecSliceFF.save_config(Instance_paritySpec)
-
-        chosen = pick_parity_drive_freq(
-            data_paritySpec, which=ZSP_ParityFreqs_Cached["which_to_park"]
-        )
-        ZSP_ParityFreqs_Cached["lower_peak_MHz"] = chosen["lower"]
-        ZSP_ParityFreqs_Cached["higher_peak_MHz"] = chosen["higher"]
-        parity_drive_freq_MHz = chosen["picked"]
-        print(
-            f"[ZeroSpanParity] parity doublet: lower={chosen['lower']:.6f} "
-            f"higher={chosen['higher']:.6f} MHz; parking at "
-            f"{ZSP_ParityFreqs_Cached['which_to_park']} "
-            f"({parity_drive_freq_MHz:.6f} MHz)"
-        )
-    else:
-        which = ZSP_ParityFreqs_Cached["which_to_park"]
-        parity_drive_freq_MHz = (
-            ZSP_ParityFreqs_Cached["lower_peak_MHz"]
-            if which == "lower"
-            else ZSP_ParityFreqs_Cached["higher_peak_MHz"]
-        )
-        if parity_drive_freq_MHz is None:
-            raise RuntimeError(
-                "[ZeroSpanParity] No cached parity freq and "
-                "ZSP_RecalibrateParityFreqs=False. Populate ZSP_ParityFreqs_Cached "
-                "or set ZSP_RecalibrateParityFreqs=True."
-            )
-
-    # ---- Step 2: optional g/e separator pre-calibration ---------------------
-    if ZSP_RecalibrateSeparator:
-        sep = get_apriori_separator_from_singleshot(
-            config=config, soc=soc, soccfg=soccfg, outerFolder=zsp_outerFolder
-        )
-        ZSP_Separator_Cached["g_center"] = sep["g_center"]
-        ZSP_Separator_Cached["e_center"] = sep["e_center"]
-        ZSP_Separator_Cached["normal"] = sep["normal"]
-        ZSP_Separator_Cached["midpoint"] = sep["midpoint"]
-    elif ZSP_AnalysisParams["classifier_method"] == "apriori":
-        # Spec §5.3 rule 7: with RecalibrateSeparator=False and apriori
-        # classification, all four cached fields must be np.ndarray of shape
-        # (2,). Validate fail-fast (a copy-pasted list is coerced; wrong shapes
-        # are rejected).
-        for _k in ("g_center", "e_center", "normal", "midpoint"):
-            _v = ZSP_Separator_Cached[_k]
-            if _v is None:
-                raise RuntimeError(
-                    f"[ZeroSpanParity §5.3 rule 7] ZSP_Separator_Cached['{_k}'] "
-                    f"is None and classifier_method='apriori'. Populate "
-                    f"ZSP_Separator_Cached, set ZSP_RecalibrateSeparator=True, or "
-                    f"use classifier_method='kmeans'."
-                )
-            _arr = np.asarray(_v, dtype=float)
-            if _arr.shape != (2,):
-                raise RuntimeError(
-                    f"[ZeroSpanParity §5.3 rule 7] ZSP_Separator_Cached['{_k}'] "
-                    f"has shape {_arr.shape}, expected (2,) — an (I, Q) "
-                    f"coordinate."
-                )
-            ZSP_Separator_Cached[_k] = _arr  # normalize to ndarray
-
-    # ---- Step 3: build the ZeroSpanParity cfg -------------------------------
-    zsp_mode_params = (
-        ZSP_StrobeParams if ZSP_RunMode == "strobe" else ZSP_DecimatedParams
-    )
-    zsp_qubit_gain = (
-        ZSP_DriveParams["qubit_gain"]
-        if ZSP_DriveParams["qubit_gain"] is not None
-        else qubit_gain
-    )
-    zsp_pulse_gain = (
-        ZSP_DriveParams["pulse_gain"]
-        if ZSP_DriveParams["pulse_gain"] is not None
-        else cavity_gain
-    )
-    zsp_cfg = {
-        # Channel routing sourced from BaseConfig (Calib/initialize4Q.py)
-        "res_ch": config["res_ch"],
-        "qubit_ch": config["qubit_ch"],
-        "ro_chs": config["ro_chs"],
-        "nqz": config["nqz"],
-        "qubit_nqz": config["qubit_nqz"],
-        "mixer_freq": config["mixer_freq"],
-        # Frequencies (active qubit's tuned readout + picked parity peak)
-        "read_pulse_freq": resonator_frequency_center,
-        "parity_drive_freq": parity_drive_freq_MHz,
-        # Drive
-        "qubit_gain": zsp_qubit_gain,
-        "pulse_gain": zsp_pulse_gain,
-        "res_phase": ZSP_DriveParams["res_phase"],
-        # Mode + trigger source
-        "mode": ZSP_RunMode,
-        "start_src": ZSP_StartSrc,
-        # Mode-specific params (read_length, adc_trig_offset, + mode extras)
-        **zsp_mode_params,
-    }
-
-    # ---- Step 4: run acquisition --------------------------------------------
-    zsp_exp = ZeroSpanParity(
-        soc=soc,
-        soccfg=soccfg,
-        path="ZeroSpanParity",
-        outerFolder=zsp_outerFolder,
-        cfg=zsp_cfg,
-    )
-    if ZSP_RunMode == "strobe" and ZSP_StrobeParams["n_chunks"] > 1:
-        zsp_data = chunked_acquire(
-            zsp_exp, n_chunks=ZSP_StrobeParams["n_chunks"], progress=True
-        )
-        # Stitched arrays replace exp.data so save_data writes the full record.
-        zsp_exp.data = {"data": zsp_data}
-    else:
-        zsp_data = zsp_exp.acquire(progress=True)
-    zsp_exp.save_data()
-    zsp_exp.save_config()
-
-    # ---- Step 5: offline analysis -------------------------------------------
-    zsp_separator = (
-        ZSP_Separator_Cached
-        if ZSP_AnalysisParams["classifier_method"] == "apriori"
-        else None
-    )
-    analyze_parity_run(
-        h5_path=zsp_exp.fname,
-        separator=zsp_separator,
-        window_us=ZSP_AnalysisParams["window_us"],
-        k_sigma=ZSP_AnalysisParams["k_sigma"],
-        classifier_method=ZSP_AnalysisParams["classifier_method"],
-        step_us=ZSP_AnalysisParams["step_us"],
-        min_burst_duration_us=ZSP_AnalysisParams["min_burst_duration_us"],
-        analysis_bin_us=ZSP_AnalysisParams["analysis_bin_us"],
-        save_plots=ZSP_AnalysisParams["save_plots"],
-        out_dir=os.path.dirname(zsp_exp.fname),
-    )
-    print(f"[ZeroSpanParity] complete. Raw data: {zsp_exp.fname}")
-
-    # --- Validation harness execution ---
-    _val_out_dir = (
-        zsp_exp.outerFolder
-        if hasattr(zsp_exp, "outerFolder")
-        else os.path.dirname(zsp_exp.fname)
-    )
-
-    if Validate_StaticContrast:
-        if ZSP_Separator_Cached.get("g_center") is None:
-            raise RuntimeError(
-                "Validate_StaticContrast needs a calibrated separator (set RecalibrateSeparator)"
-            )
-        _f0 = zsp_cfg["read_pulse_freq"]
-        _span = StaticContrast_params["freq_span_mhz"]
-        _flist = np.linspace(
-            _f0 - _span / 2, _f0 + _span / 2, StaticContrast_params["n_points"]
-        )
-        zsp_exp.cfg["reps_per_chunk"] = StaticContrast_params["reps_per_point"]
-        _sc = run_static_contrast(
-            zsp_exp, _flist, qubit_gain_on=zsp_cfg["qubit_gain"], out_dir=_val_out_dir
-        )
-        print(
-            f"[stage 1] best read_pulse_freq = {_sc['best_freq']:.4f} MHz  (contrast SNR {_sc['contrast_snr']:.1f})"
-        )
-
-    if Validate_ContrastVsQubitFreq:
-        _q0 = zsp_cfg["parity_drive_freq"]
-        _qspan = ContrastVsQubit_params["qfreq_span_mhz"]
-        _qlist = np.linspace(
-            _q0 - _qspan / 2, _q0 + _qspan / 2, ContrastVsQubit_params["n_points"]
-        )
-        _s2 = run_contrast_vs_qubit_freq(zsp_exp, _qlist, out_dir=_val_out_dir)
-        print(f"[stage 2] parity peak sep = {_s2['peaks'].get('peak_sep')}")
-
-    if Validate_ModulationCheck:
-        _m = run_modulation_check(
-            zsp_exp,
-            separator=zsp_separator,
-            modulation_freq_hz=Modulation_params["modulation_freq_hz"],
-            n_periods=Modulation_params["n_periods"],
-            out_dir=_val_out_dir,
-        )
-        print(
-            f"[stage 3] modulation corr={_m['correlation']:.2f} depth={_m['modulation_depth']:.2f} "
-            f"snr={_m['snr']:.2f}  (gate: proceed only if recovered)"
-        )
-
-    if Validate_ControlSuite:
-        _pf = {
-            "lower": ZSP_ParityFreqs_Cached.get("lower_peak_MHz"),
-            "higher": ZSP_ParityFreqs_Cached.get("higher_peak_MHz"),
-        }
-        _c = run_control_suite(
-            zsp_exp,
-            separator=zsp_separator,
-            variants=tuple(Control_params["variants"]),
-            detune_mhz=Control_params["detune_mhz"],
-            parity_freqs=_pf,
-            out_dir=_val_out_dir,
-        )
-        print(
-            f"[stage 8] controls: {[(k, v.get('separation_snr', v.get('separation_snr_lower'))) for k, v in _c['variants'].items()]}"
-        )
-
-    if Validate_EnvironmentSweep:
-
-        def _set_power(_exp, _val):
-            _exp.cfg["pulse_gain"] = (
-                _val  # NOTE: replace with attenuator/YOKO call for real power sweep
-            )
-            _exp.prog = type(_exp.prog)(_exp.soccfg, _exp.cfg)
-
-        _e = run_environment_sweep(
-            zsp_exp,
-            separator=zsp_separator,
-            param_name=Environment_params["param_name"],
-            param_values=Environment_params["values"],
-            set_param=_set_power,
-            out_dir=_val_out_dir,
-        )
-        print(f"[stage 7] swept {Environment_params['param_name']}: {_e['table']}")
-
-    if Build_EvidenceReport:
-        _rep = build_evidence_report(
-            _val_out_dir, os.path.join(_val_out_dir, "EVIDENCE.md")
-        )
-        print(f"[stage 9] evidence report written: {_rep}")
-
-# ── Active-reset verification ────────────────────────────────────────────────
-if RunActiveResetVerify:
-    arv_dir = os.path.join(outerFolder, "ActiveResetVerify")
-    os.makedirs(arv_dir, exist_ok=True)
-
-    # 1) Calibrate readout phase + I-threshold (rotates config["res_phase"] so
-    #    |g>/|e> separate along I, and measures the threshold off the rotated blobs).
-    arv_calib = calibrate_active_reset_readout(
-        config=config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
-    )
-
-    # 2) Base config shared by all four conditions. g_center/e_center are in the
-    #    rotated frame (consistent with config["res_phase"] set just above).
-    arv_base_cfg = {
-        "f_ge": qubit_frequency_center,
-        "pi_gain": qubit_gain,
-        "sigma": qubit_sigma,
-        "flattop_length": qubit_flattop,
-        "reps": ActiveResetVerify_params["reps"],
-        "rounds": 1,
-        "relax_delay": ActiveResetVerify_params["relax_delay"],
-        "n_verify_reads": ActiveResetVerify_params["n_verify_reads"],
-        "verify_relax_delay": ActiveResetVerify_params["verify_relax_delay"],
-        "reset_cycles": ActiveResetVerify_params["reset_cycles"],
-        "reset_readout_relax_delay": ActiveResetVerify_params[
-            "reset_readout_relax_delay"
-        ],
-        "post_reset_wait": ActiveResetVerify_params["post_reset_wait"],
-        "readout_threshold": arv_calib["readout_threshold"],
-        "reset_ground_below_threshold": arv_calib["reset_ground_below_threshold"],
-        "g_center": list(arv_calib["g_center"]),
-        "e_center": list(arv_calib["e_center"]),
-        "Qubit_number": Qubit_Readout,
-    }
-
-    # 3) Four conditions: prep |g>/|e>  ×  reset off/on.
-    arv_conditions = [
-        ("prep|g>_resetOFF", False, False),
-        ("prep|e>_resetOFF", True, False),
-        ("prep|g>_resetON", False, True),
-        ("prep|e>_resetON", True, True),
-    ]
-    arv_results = {}
-    for arv_label, arv_prep, arv_reset in arv_conditions:
-        print(f"\n[ActiveResetVerify] Condition: {arv_label}")
-        cfg_arv = (
-            config
-            | arv_base_cfg
-            | {
-                "prep_excited": arv_prep,
-                "use_active_reset": arv_reset,
-            }
-        )
-        inst_arv = ActiveResetVerify(
-            path="ActiveResetVerify",
-            cfg=cfg_arv,
-            soc=soc,
-            soccfg=soccfg,
-            outerFolder=outerFolder,
-        )
-        data_arv = ActiveResetVerify.acquire(inst_arv)
-        ActiveResetVerify.display(inst_arv, data_arv, plotDisp=False, figNum=20)
-        ActiveResetVerify.save_data(inst_arv, data_arv)
-        ActiveResetVerify.save_config(inst_arv)
-        arv_results[arv_label] = np.asarray(data_arv["data"]["p_ground"])
-        print(
-            f"[ActiveResetVerify] {arv_label}: P(|g>) per read = "
-            f"{np.array2string(arv_results[arv_label], precision=3)}"
-        )
-
-    # 4) Overlay P(|g>) vs read index for all conditions.
-    read_idx_arv = np.arange(ActiveResetVerify_params["n_verify_reads"])
-    timestamp_arv = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    plt.figure(figsize=(8, 5))
-    for arv_label, _, _ in arv_conditions:
-        plt.plot(
-            read_idx_arv, arv_results[arv_label], "o-", linewidth=1.5, label=arv_label
-        )
-    plt.xlabel("Verification readout index")
-    plt.ylabel("P(|g>)")
-    plt.ylim(-0.05, 1.05)
-    plt.title(
-        "Active-reset verification\n"
-        f"f_ge={qubit_frequency_center:.4f} MHz, "
-        f"reset_cycles={ActiveResetVerify_params['reset_cycles']}"
-    )
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    arv_overlay = os.path.join(
-        arv_dir, f"ActiveResetVerify_overlay_{timestamp_arv}.png"
-    )
-    plt.savefig(arv_overlay, dpi=300, bbox_inches="tight")
-    if ActiveResetVerify_params.get("plotDisp", False):
-        plt.show(block=False)
-        plt.pause(0.1)
-    else:
-        plt.close()
-
-    np.savez(
-        os.path.join(arv_dir, f"ActiveResetVerify_{timestamp_arv}.npz"),
-        read_index=read_idx_arv,
-        readout_threshold=arv_calib["readout_threshold"],
-        res_phase=arv_calib["res_phase"],
-        g_center=arv_calib["g_center"],
-        e_center=arv_calib["e_center"],
-        **{f"p_ground_{lbl}": arv_results[lbl] for lbl, _, _ in arv_conditions},
-    )
-
-    # 5) Verdict.
-    pg_g_off = float(np.mean(arv_results["prep|g>_resetOFF"]))
-    pg_e_off = float(np.mean(arv_results["prep|e>_resetOFF"]))
-    pg_g_on = float(np.mean(arv_results["prep|g>_resetON"]))
-    pg_e_on = float(np.mean(arv_results["prep|e>_resetON"]))
-    print("\n[ActiveResetVerify] ===== VERDICT =====")
-    print(f"  prep|g> reset OFF : P(|g>)={pg_g_off:.3f}  (thermal baseline)")
-    print(f"  prep|e> reset OFF : P(|g>)={pg_e_off:.3f}  (control, should be low)")
-    print(f"  prep|g> reset ON  : P(|g>)={pg_g_on:.3f}")
-    print(f"  prep|e> reset ON  : P(|g>)={pg_e_on:.3f}  (key proof)")
-    recovery_arv = pg_e_on - pg_e_off
-    print(f"  reset recovery from |e> : dP(|g>) = {recovery_arv:+.3f}")
-    if pg_e_on >= 0.9 * pg_g_on and recovery_arv >= 0.3:
-        print("  => Active reset is WORKING (recovers |g> from |e>).")
-    else:
-        print(
-            "  => Active reset NOT clearly working; inspect readout_threshold / "
-            "res_phase / pi_gain calibration."
-        )
-    print(f"[ActiveResetVerify] complete. Overlay: {arv_overlay}")
-
 # ramp_to(yoko, 0.0)
 # yoko.write(":OUTP OFF")
-yoko.close()
+# yoko.close()
 ###############################################`
