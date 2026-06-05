@@ -487,7 +487,8 @@ ModifiedRamsey_params = {
     "voltage_min": 0.000,  # absolute lower voltage bound [V]
     "voltage_max": 0.05,  # absolute upper voltage bound [V]
     "max_voltage_tries": 1000,  # max search steps per cycle
-    "num_cycles": 10,  # how many search -> Ramsey cycles to run
+    "num_cycles": 1000000,  # how many search -> Ramsey cycles to run
+    "inter_cycle_delay": 3,  # fixed wait [s] between consecutive cycles (0 = no wait)
     "use_pi_pulse": False,
     "center_peak_tol_mhz": 0.03,  # fix
     "center_peak_df_for_tau": 0.15,  # fix
@@ -532,7 +533,7 @@ ModifiedRamsey_params = {
     # tau is computed automatically as 1 / (2 * peak_sep_MHz)
     # f_ge is set automatically to the higher-frequency peak
     # No relax delay: the measurement collapses the qubit and acts as reset.
-    "mr_reps": 50000,  # number of single-shot Ramsey measurements per cycle
+    "mr_reps": 150000,  # number of single-shot Ramsey measurements per cycle
     "average_n_shots": 200,
     "use_active_reset": True,
     # Parity -> computational-state mapping (phase of the closing pi/2).
@@ -1698,7 +1699,14 @@ if RunModifiedRamsey:
             config=config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
         )
     ss_recalib_n_mr = ModifiedRamsey_params.get("ss_recalib_every_n_cycles", None)
+    inter_cycle_delay_mr = ModifiedRamsey_params.get("inter_cycle_delay", 0)
     for cycle_idx_mr in range(num_cycles_mr):
+        # Fixed wait between cycles (skipped before the first cycle). Placed at the
+        # top of the loop so it applies between every pair of consecutive cycles
+        # regardless of which path the previous cycle exited through (including the
+        # failure `continue` further down).
+        if cycle_idx_mr > 0 and inter_cycle_delay_mr > 0:
+            time.sleep(inter_cycle_delay_mr)
         if ModifiedRamsey_params.get("use_apriori_separator", False):
             if apriori_sep_mr is None or (
                 ss_recalib_n_mr is not None
