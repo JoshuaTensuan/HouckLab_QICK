@@ -492,7 +492,7 @@ Run2ToneChargeDispersionQuasiCW = False  # new automated mode
 # f_ge is automatically set to the higher-frequency peak.
 # relax_delay must be set to >= 3-5 * T1 so the qubit thermalises between shots
 # (hardware active reset not available in AveragerProgram; thermal reset is sufficient).
-RunModifiedRamsey = True
+RunModifiedRamsey = False
 
 TwoToneChargeDispersion_params = {
     "df": 0.5,  # required peak separation in MHz
@@ -526,7 +526,7 @@ ModifiedRamsey_params = {
     "voltage_max": 0.05,  # absolute upper voltage bound [V]
     "max_voltage_tries": 1000,  # max search steps per cycle
     "num_cycles": 100000,  # how many search -> Ramsey cycles to run
-    "inter_cycle_delay": 10,  # wait [s] between consecutive cycles (0 = no wait)
+    "inter_cycle_delay": 0,  # wait [s] between consecutive cycles (0 = no wait)
     "use_pi_pulse": False,
     "center_peak_tol_mhz": 0.03,  # fix
     "center_peak_df_for_tau": 0.15,  # fix
@@ -543,6 +543,7 @@ ModifiedRamsey_params = {
     "sigma": 2,
     "gain": 100,
     "qubit_length": 25,
+    
     # --- parity-doublet peak-finder (utils.find_parity_doublet) ---
     # Detection is referenced to the trace's noise floor (median + MAD), not its
     # dynamic range, and prefers the most symmetric, balanced, prominent pair of
@@ -567,16 +568,18 @@ ModifiedRamsey_params = {
     # under a non-interactive backend. The search never pauses for input.
     "live_display": True,
     "live_pause": 0.05,  # GUI event-loop pause per refresh [s].
+
     # --- Modified Ramsey settings ---
     # tau is computed automatically as 1 / (2 * peak_sep_MHz)
     # f_ge is set automatically to the higher-frequency peak
     # No relax delay: the measurement collapses the qubit and acts as reset.
-    "mr_reps": 100000,  # number of single-shot Ramsey measurements per cycle
+    "mr_reps": 200000,  # number of single-shot Ramsey measurements per cycle
     # "mr_reps": 500000,  # number of single-shot Ramsey measurements per cycle
     "average_n_shots": 100,
     # Marker transparency for the per-cycle IQ scatter plots. Lower = more
     # transparent, so dense overlapping shots are easier to resolve individually.
-    "iq_plot_alpha": 0.5,
+    "iq_plot_alpha": 0.01,
+
     # ── Continuous (uninterrupted) acquisition mode ───────────────────────────
     # When True, RunModifiedRamsey skips the per-cycle two-tone search and the
     # per-cycle plotting and instead streams ModifiedRamsey chunks (mr_reps shots
@@ -597,6 +600,7 @@ ModifiedRamsey_params = {
     # Overwrite "latest_snippet.npz" every N seconds for live monitoring. Every
     # chunk is also saved separately, so this is purely a fixed path to watch.
     "snippet_save_interval_s": 60,
+
     "use_active_reset": True,
     # Single-readout feedback reset: reuse the FINAL Ramsey readout itself as the
     # conditional-pi measurement. After each Ramsey readout, conditionally flip
@@ -613,6 +617,7 @@ ModifiedRamsey_params = {
     #                    off-resonant branch -> |e>.
     #   True:            final pi/2 @ 0 deg (sign-flipped 2nd pulse) -> on-resonant
     #                    branch -> |e>, off-resonant branch -> |g>.
+
     "flip_final_pi2": True,
     # symmetric_ramsey: drive at the midpoint f_avg = (f_lower + f_upper)/2 instead
     # of on-resonant with the upper peak, so both branches are symmetrically
@@ -621,6 +626,7 @@ ModifiedRamsey_params = {
     #   False (default): standard scheme (drive on upper peak, closing pi/2 @ 180).
     #   True:            symmetric-drive scheme. Default mapping f_upper -> |e>,
     #                    f_lower -> |g>; flip_final_pi2 swaps it (90 <-> 270 deg).
+
     "symmetric_ramsey": True,
     # Explicit symmetric-mode drive frequency [MHz] = the center of the charge-
     # dispersion curve (the midpoint between the two parity branches). Only used
@@ -629,7 +635,7 @@ ModifiedRamsey_params = {
     # instead; df (hence tau and the pi relative phase between branches) is
     # unchanged, so this only sets the common-mode drive offset. Pinning it also
     # keeps the drive fixed when df/tau is swept (e.g. the calibration sweep).
-    "symmetric_drive_freq": 2847.295,
+    "symmetric_drive_freq": None,
     # --- manual parity-frequency mode (skip the two-tone voltage search) ---
     # When skip_two_tone_calibration is True, the two-tone spec voltage search is
     # bypassed entirely and Modified Ramsey runs directly at the two parity
@@ -644,12 +650,14 @@ ModifiedRamsey_params = {
     # Yoko charge-bias voltage [V] used in manual mode. If None, manual mode runs
     # at whatever voltage the Yokogawa is currently set to (it is not changed).
     # Only applied when skip_two_tone_calibration is True.
-    "manual_voltage": 0.00,
+    "manual_voltage": 0.01,
     # Active-reset readout rounds per shot (used by both the real Ramsey, when
     # use_active_reset is True, and the verification experiment).
     "reset_cycles": 1,
     "reset_readout_relax_delay": 0.0,  # us after each reset readout
-    "post_reset_wait": 0.0,  # us settle after the reset block
+    "post_reset_wait": 2.0,  # us settle after the reset block
+
+
     ## TODO: CHANGE READOUT PARAMETERS IN TRANS_PARAMS
 }
 
@@ -695,28 +703,6 @@ ModifiedRamseyCalib_params = {
     # ModifiedRamsey_params["symmetric_drive_freq"] (which itself defaults to the
     # derived f_ge - df/2).
     "symmetric_drive_freq": 2847.2942,
-    # ── 2D mode: ALSO sweep the symmetric-mode drive frequency ────────────────
-    # When sweep_drive_freq is True the calibration becomes a 2D sweep over
-    # (symmetric drive frequency) x (tau): for every drive frequency the full tau
-    # list above is run, producing an excited-population heatmap vs (drive, tau)
-    # -- effectively a Ramsey chevron in the symmetric-drive scheme. The vertical
-    # zero-detuning column (P(e) flat / pinned near 0.5 regardless of tau) marks
-    # the true qubit/parity center; read it off and pin symmetric_drive_freq for
-    # the real ModifiedRamsey run. Requires symmetric_ramsey=True (the swept value
-    # sets cfg["symmetric_drive_freq"], which only has effect in symmetric mode).
-    # The drive axis is drive_freq_center +/- drive_freq_span/2 over n_drive_freq
-    # points, UNLESS drive_freq_list_MHz is given (which then takes precedence).
-    # drive_freq_center=None -> use symmetric_drive_freq above (or the Q2 center
-    # qubit_frequency_center if that is None too).
-    "sweep_drive_freq": True,
-    "drive_freq_center_MHz": None,  # None -> symmetric_drive_freq / Q2 center
-    "drive_freq_span_MHz": 0.3,  # total span; axis = center +/- span/2
-    "n_drive_freq": 13,
-    "drive_freq_list_MHz": None,  # explicit list [MHz]; overrides center/span/n
-    # Per-(drive,tau) point PNGs (averaged trace + IQ). A 2D sweep can emit
-    # hundreds of files; default off when sweeping the drive, on for a plain
-    # tau sweep. Set explicitly to override.
-    "per_point_plots": True,
 }
 
 # ── Active-reset verification ────────────────────────────────────────────────
@@ -788,7 +774,7 @@ ChiShift_params = {
     "relax_delay": 15000,  # us ≈ 3*T1 (T1 ≈ 5 ms) – pi pulse needs full thermalisation
 }
 
-RunAmplitudeRabi = False
+RunAmplitudeRabi = True
 Amplitude_Rabi_params = {
     "qubit_freq": Qubit_Parameters[str(Qubit_Pulse)]["Qubit"]["Frequency"],
     "max_gain": 30000,
@@ -870,9 +856,9 @@ SS_R_params = {
     "trans_pts": 21,
 }
 
-SingleShot_QubitOptimize = True
+SingleShot_QubitOptimize = False
 SS_Q_params = {
-    "q_gain_span": 500,
+    "q_gain_span": 50,
     "q_gain_pts": 21,
     "q_freq_span": 0.1,
     "q_freq_pts": 3,
@@ -1074,8 +1060,8 @@ trans_config = {
     # readout_length alone never changed the Ramsey readout tone. "readout_length"
     # is the ADC integration window. Keep the two equal so the window tracks the
     # tone.
-    "length": 30,  # us – resonator readout tone duration
-    "readout_length": 15,  # us – ADC integration window (keep = "length")
+    "length": 5,  # us – resonator readout tone duration
+    "readout_length": 5,  # us – ADC integration window (keep = "length")
     # "readout_length": 1,  # 15 [us]
     "pulse_gain": cavity_gain,  # [DAC units]
     "pulse_freq": resonator_frequency_center,  # [MHz] actual frequency is this number + "cavity_LO"
@@ -1843,9 +1829,7 @@ if RunModifiedRamsey:
     # so the subsequent apriori separator is measured in the rotated frame). The
     # per-cycle threshold/ground-below are recomputed from apriori_sep_mr below so
     # they track blob drift across recalibrations.
-    mr_reset_from_readout = ModifiedRamsey_params.get(
-        "reset_from_ramsey_readout", False
-    )
+    mr_reset_from_readout = ModifiedRamsey_params.get("reset_from_ramsey_readout", False)
     # reset_from_ramsey_readout takes precedence over use_active_reset (the two are
     # mutually exclusive; see ModifiedRamsey docstring / wire_reset_into_mr_cfg).
     mr_use_active_reset = (
@@ -2677,65 +2661,12 @@ if RunModifiedRamseyCalib:
             "symmetric_drive_freq", None
         )
 
-    # ── Build the symmetric-drive-frequency sweep axis (2D mode) ──────────────
-    # sweep_drive_freq=True turns this into a 2D (drive freq) x (tau) sweep: for
-    # each drive frequency the full tau list is run. The swept value sets
-    # cfg["symmetric_drive_freq"], so it only takes effect in symmetric mode.
-    sweep_drive_cal = bool(ModifiedRamseyCalib_params.get("sweep_drive_freq", False))
-    if sweep_drive_cal:
-        if not symmetric_ramsey_cal:
-            print(
-                "[MRCalib] WARNING: sweep_drive_freq=True needs symmetric_ramsey "
-                "for the swept value to take effect; forcing symmetric_ramsey=True."
-            )
-            symmetric_ramsey_cal = True
-        drive_list_explicit_cal = ModifiedRamseyCalib_params.get(
-            "drive_freq_list_MHz", None
-        )
-        if drive_list_explicit_cal is not None:
-            drive_list_cal = [float(f) for f in drive_list_explicit_cal]
-        else:
-            drive_center_cal = ModifiedRamseyCalib_params.get(
-                "drive_freq_center_MHz", None
-            )
-            if drive_center_cal is None:
-                drive_center_cal = (
-                    float(symmetric_drive_freq_cal)
-                    if symmetric_drive_freq_cal is not None
-                    else float(qubit_frequency_center)
-                )
-            drive_span_cal = float(
-                ModifiedRamseyCalib_params.get("drive_freq_span_MHz", 0.3)
-            )
-            n_drive_freq_cal = int(ModifiedRamseyCalib_params.get("n_drive_freq", 11))
-            drive_list_cal = list(
-                np.linspace(
-                    float(drive_center_cal) - drive_span_cal / 2.0,
-                    float(drive_center_cal) + drive_span_cal / 2.0,
-                    n_drive_freq_cal,
-                )
-            )
-    else:
-        # 1D tau sweep (unchanged): one drive setting, possibly None (-> the
-        # program derives f_ge - df/2 in symmetric mode).
-        drive_list_cal = [symmetric_drive_freq_cal]
-    n_drive_cal = len(drive_list_cal)
-
-    if sweep_drive_cal:
-        print(
-            f"[MRCalib] 2D sweep: {n_drive_cal} drive freqs x {n_tau_cal} tau pts. "
-            f"drive {min(drive_list_cal):.6f}-{max(drive_list_cal):.6f} MHz; "
-            f"tau {tau_start_cal:.3f}-{tau_stop_cal:.3f} us "
-            f"(df {df_start_cal * 1e3:.1f}-{df_stop_cal * 1e3:.1f} kHz), "
-            f"symmetric_ramsey={symmetric_ramsey_cal}"
-        )
-    else:
-        print(
-            f"[MRCalib] sweeping {n_tau_cal} tau points "
-            f"({tau_start_cal:.3f}-{tau_stop_cal:.3f} us; "
-            f"df {df_start_cal * 1e3:.1f}-{df_stop_cal * 1e3:.1f} kHz), "
-            f"f_ge fixed at {f_ge_cal:.6f} MHz, symmetric_ramsey={symmetric_ramsey_cal}"
-        )
+    print(
+        f"[MRCalib] sweeping {n_tau_cal} tau points "
+        f"({tau_start_cal:.3f}-{tau_stop_cal:.3f} us; "
+        f"df {df_start_cal * 1e3:.1f}-{df_stop_cal * 1e3:.1f} kHz), "
+        f"f_ge fixed at {f_ge_cal:.6f} MHz, symmetric_ramsey={symmetric_ramsey_cal}"
+    )
 
     # Optional fixed bias for the calibration (else stay where the Yoko is).
     voltage_cal = ModifiedRamseyCalib_params.get("voltage", None)
@@ -2774,293 +2705,206 @@ if RunModifiedRamseyCalib:
         ModifiedRamseyCalib_params.get("mr_reps", ModifiedRamsey_params["mr_reps"])
     )
 
-    # 2D result grids: rows = drive frequency, cols = tau.
-    mean_excited_cal = np.full((n_drive_cal, n_tau_cal), np.nan)
-    mean_i_cal = np.full((n_drive_cal, n_tau_cal), np.nan)
-    mean_q_cal = np.full((n_drive_cal, n_tau_cal), np.nan)
-    # Averaged excited-population time traces + matching time axes per (drive,tau).
-    excited_avg_all_cal = [[None] * n_tau_cal for _ in range(n_drive_cal)]
-    elapsed_avg_ms_all_cal = [[None] * n_tau_cal for _ in range(n_drive_cal)]
-
-    # Per-(drive,tau) point PNGs can number in the hundreds for a 2D sweep; off by
-    # default when sweeping the drive, on for a plain tau sweep (see params).
-    per_point_plots_cal = bool(
-        ModifiedRamseyCalib_params.get("per_point_plots", not sweep_drive_cal)
-    )
+    mean_excited_cal = np.full(n_tau_cal, np.nan)
+    mean_i_cal = np.full(n_tau_cal, np.nan)
+    mean_q_cal = np.full(n_tau_cal, np.nan)
+    excited_avg_all_cal = []  # per-tau averaged time traces (stacked at the end)
+    elapsed_avg_ms_all_cal = []  # matching time axes [ms]
 
     timestamp_cal = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     base_cal = os.path.join(save_dir_mrcal, f"MRCalib_{timestamp_cal}")
 
-    for i_drive_cal in range(n_drive_cal):
-        drive_i_cal = drive_list_cal[i_drive_cal]
-        drive_tag_cal = (
-            "derived (f_ge - df/2)"
-            if drive_i_cal is None
-            else f"{float(drive_i_cal):.6f} MHz"
+    for i_tau_cal in range(n_tau_cal):
+        tau_i_cal = float(tau_list_cal[i_tau_cal])
+        df_i_cal = float(df_list_cal[i_tau_cal])
+        print(
+            f"[MRCalib] {i_tau_cal + 1}/{n_tau_cal}: tau={tau_i_cal:.3f} us "
+            f"(df={df_i_cal * 1e3:.2f} kHz)"
         )
-        for i_tau_cal in range(n_tau_cal):
-            tau_i_cal = float(tau_list_cal[i_tau_cal])
-            df_i_cal = float(df_list_cal[i_tau_cal])
-            print(
-                f"[MRCalib] drive {i_drive_cal + 1}/{n_drive_cal} "
-                f"({drive_tag_cal}), tau {i_tau_cal + 1}/{n_tau_cal}: "
-                f"tau={tau_i_cal:.3f} us (df={df_i_cal * 1e3:.2f} kHz)"
-            )
 
-            mr_cfg = {
-                "f_ge": f_ge_cal,
-                "df": df_i_cal,
-                "pi2_gain": pi2_gain,
-                "pi_gain": qubit_gain,
-                "use_pi_pulse": ModifiedRamsey_params.get("use_pi_pulse", False),
-                "flip_final_pi2": ModifiedRamsey_params.get("flip_final_pi2", False),
-                "symmetric_ramsey": symmetric_ramsey_cal,
-                "symmetric_drive_freq": (
-                    None if drive_i_cal is None else float(drive_i_cal)
-                ),
-                "sigma": qubit_sigma,
-                "flattop_length": qubit_flattop,
-                "reps": mr_reps_cal,
-                "rounds": 1,
-                "current_voltage": current_voltage_cal,
-                "Qubit_number": Qubit_Readout,
-                "iq_plot_alpha": iq_plot_alpha_cal,
-            }
-            wire_reset_into_mr_cfg(
-                mr_cfg,
-                apriori_sep_cal,
-                ModifiedRamsey_params,
-                mrcal_use_active_reset,
-                mrcal_reset_from_readout,
-            )
-            config_cal = config | mr_cfg
-
-            Instance_cal = ModifiedRamsey(
-                path="ModifiedRamsey_Calib",
-                cfg=config_cal,
-                soc=soc,
-                soccfg=soccfg,
-                outerFolder=outerFolder,
-            )
-            data_cal = ModifiedRamsey.acquire(Instance_cal)
-
-            raw_i_cal = np.ravel(np.array(data_cal["data"]["shots_i"]))
-            raw_q_cal = np.ravel(np.array(data_cal["data"]["shots_q"]))
-
-            classification_cal = classify_and_average_iq(
-                raw_i=raw_i_cal,
-                raw_q=raw_q_cal,
-                g_center=apriori_sep_cal["g_center"],
-                e_center=apriori_sep_cal["e_center"],
-                average_n_shots=average_n_shots_cal,
-            )
-            binary_cal = np.asarray(classification_cal["binary_states"])
-            excited_avg_cal = classification_cal["excited_avg"]
-            normal_cal = np.asarray(classification_cal["normal"])
-            midpoint_cal = np.asarray(classification_cal["midpoint"])
-            mean_excited_cal[i_drive_cal, i_tau_cal] = float(np.mean(binary_cal))
-            mean_i_cal[i_drive_cal, i_tau_cal] = float(np.mean(raw_i_cal))
-            mean_q_cal[i_drive_cal, i_tau_cal] = float(np.mean(raw_q_cal))
-
-            # Averaged excited-population time trace (same construction as the
-            # ModifiedRamsey per-cycle "_averaged_population" output): block-average
-            # consecutive shots in groups of average_n_shots and lay them on a time
-            # axis built from the per-rep period (tau-dependent).
-            pulse_length_us_cal = qubit_sigma * 4
-            n_qubit_pulses_cal = 3 if config_cal.get("use_pi_pulse", False) else 2
-            rep_period_us_cal = (
-                n_qubit_pulses_cal * pulse_length_us_cal
-                + tau_i_cal
-                + 0.05
-                + config_cal["readout_length"]
-            )
-            elapsed_avg_ms_cal = (
-                np.arange(len(excited_avg_cal))
-                * average_n_shots_cal
-                * rep_period_us_cal
-                * 1e-3
-            )
-            excited_avg_all_cal[i_drive_cal][i_tau_cal] = np.asarray(excited_avg_cal)
-            elapsed_avg_ms_all_cal[i_drive_cal][i_tau_cal] = np.asarray(
-                elapsed_avg_ms_cal
-            )
-
-            if not per_point_plots_cal:
-                continue
-
-            point_stub_cal = (
-                f"_drv{i_drive_cal:03d}_tau{i_tau_cal:03d}_{tau_i_cal:.3f}us"
-            )
-
-            plt.figure(figsize=(10, 4))
-            plt.plot(elapsed_avg_ms_cal, excited_avg_cal, "o-", linewidth=1.5)
-            plt.xlabel("Time since start (ms)")
-            plt.ylabel("Averaged excited-state population")
-            plt.ylim(-0.05, 1.05)
-            plt.title(
-                f"MR calib averaged trace: tau={tau_i_cal:.3f} us "
-                f"(df={df_i_cal * 1e3:.2f} kHz)\n"
-                f"f_drive={drive_tag_cal}, {average_n_shots_cal} shots/point, "
-                f"{mr_reps_cal} reps"
-            )
-            plt.tight_layout()
-            plt.savefig(
-                base_cal + point_stub_cal + "_averaged_population.png",
-                dpi=300,
-                bbox_inches="tight",
-            )
-            plt.close()
-
-            # SingleShot IQ blobs + g/e separator for this trace: raw shots colored
-            # by assignment, with the calibrated g/e centers and separator overlaid.
-            c0_cal = apriori_sep_cal["g_center"]
-            c1_cal = apriori_sep_cal["e_center"]
-            I_min_cal, I_max_cal = raw_i_cal.min(), raw_i_cal.max()
-            Q_min_cal, Q_max_cal = raw_q_cal.min(), raw_q_cal.max()
-            I_pad_cal = 0.05 * (I_max_cal - I_min_cal if I_max_cal > I_min_cal else 1.0)
-            Q_pad_cal = 0.05 * (Q_max_cal - Q_min_cal if Q_max_cal > Q_min_cal else 1.0)
-            I_line_cal = np.linspace(I_min_cal - I_pad_cal, I_max_cal + I_pad_cal, 400)
-            vertical_line_cal = np.abs(normal_cal[1]) < 1e-12
-            if not vertical_line_cal:
-                Q_line_cal = midpoint_cal[1] - (normal_cal[0] / normal_cal[1]) * (
-                    I_line_cal - midpoint_cal[0]
-                )
-
-            plt.figure(figsize=(6, 6))
-            plt.plot(
-                raw_i_cal[binary_cal == 0],
-                raw_q_cal[binary_cal == 0],
-                ".",
-                alpha=iq_plot_alpha_cal,
-                label="Assigned 0",
-            )
-            plt.plot(
-                raw_i_cal[binary_cal == 1],
-                raw_q_cal[binary_cal == 1],
-                ".",
-                alpha=iq_plot_alpha_cal,
-                label="Assigned 1",
-            )
-            plt.plot(
-                c0_cal[0], c0_cal[1], "o", markersize=10, label="SingleShot g center"
-            )
-            plt.plot(
-                c1_cal[0], c1_cal[1], "o", markersize=10, label="SingleShot e center"
-            )
-            if vertical_line_cal:
-                plt.axvline(
-                    midpoint_cal[0], linestyle="--", linewidth=2, label="g/e separator"
-                )
-            else:
-                plt.plot(
-                    I_line_cal, Q_line_cal, "--", linewidth=2, label="g/e separator"
-                )
-            plt.xlabel("I")
-            plt.ylabel("Q")
-            plt.xlim(I_min_cal - I_pad_cal, I_max_cal + I_pad_cal)
-            plt.ylim(Q_min_cal - Q_pad_cal, Q_max_cal + Q_pad_cal)
-            plt.gca().set_aspect("equal", adjustable="box")
-            plt.title(
-                f"MR calib IQ: tau={tau_i_cal:.3f} us (df={df_i_cal * 1e3:.2f} kHz)\n"
-                f"f_drive={drive_tag_cal}, V={current_voltage_cal:.6f} V"
-            )
-            plt.legend()
-            plt.tight_layout()
-            plt.savefig(
-                base_cal + point_stub_cal + "_iq_labeled.png",
-                dpi=300,
-                bbox_inches="tight",
-            )
-            plt.close()
-
-    # Per-drive population-vs-tau curves.
-    for i_drive_cal in range(n_drive_cal):
-        drive_i_cal = drive_list_cal[i_drive_cal]
-        drive_tag_cal = (
-            "derived (f_ge - df/2)"
-            if drive_i_cal is None
-            else f"{float(drive_i_cal):.6f} MHz"
+        mr_cfg = {
+            "f_ge": f_ge_cal,
+            "df": df_i_cal,
+            "pi2_gain": pi2_gain,
+            "pi_gain": qubit_gain,
+            "use_pi_pulse": ModifiedRamsey_params.get("use_pi_pulse", False),
+            "flip_final_pi2": ModifiedRamsey_params.get("flip_final_pi2", False),
+            "symmetric_ramsey": symmetric_ramsey_cal,
+            "symmetric_drive_freq": symmetric_drive_freq_cal,
+            "sigma": qubit_sigma,
+            "flattop_length": qubit_flattop,
+            "reps": mr_reps_cal,
+            "rounds": 1,
+            "current_voltage": current_voltage_cal,
+            "Qubit_number": Qubit_Readout,
+            "iq_plot_alpha": iq_plot_alpha_cal,
+        }
+        wire_reset_into_mr_cfg(
+            mr_cfg,
+            apriori_sep_cal,
+            ModifiedRamsey_params,
+            mrcal_use_active_reset,
+            mrcal_reset_from_readout,
         )
-        plt.figure(figsize=(8, 5))
-        plt.plot(tau_list_cal, mean_excited_cal[i_drive_cal], "o-")
-        plt.xlabel("tau (us)")
-        plt.ylabel("Excited-state population")
+        config_cal = config | mr_cfg
+
+        Instance_cal = ModifiedRamsey(
+            path="ModifiedRamsey_Calib",
+            cfg=config_cal,
+            soc=soc,
+            soccfg=soccfg,
+            outerFolder=outerFolder,
+        )
+        data_cal = ModifiedRamsey.acquire(Instance_cal)
+
+        raw_i_cal = np.ravel(np.array(data_cal["data"]["shots_i"]))
+        raw_q_cal = np.ravel(np.array(data_cal["data"]["shots_q"]))
+
+        classification_cal = classify_and_average_iq(
+            raw_i=raw_i_cal,
+            raw_q=raw_q_cal,
+            g_center=apriori_sep_cal["g_center"],
+            e_center=apriori_sep_cal["e_center"],
+            average_n_shots=average_n_shots_cal,
+        )
+        binary_cal = np.asarray(classification_cal["binary_states"])
+        excited_avg_cal = classification_cal["excited_avg"]
+        normal_cal = np.asarray(classification_cal["normal"])
+        midpoint_cal = np.asarray(classification_cal["midpoint"])
+        mean_excited_cal[i_tau_cal] = float(np.mean(binary_cal))
+        mean_i_cal[i_tau_cal] = float(np.mean(raw_i_cal))
+        mean_q_cal[i_tau_cal] = float(np.mean(raw_q_cal))
+
+        # Averaged excited-population time trace (same construction as the
+        # ModifiedRamsey per-cycle "_averaged_population" output): block-average
+        # consecutive shots in groups of average_n_shots and lay them on a time
+        # axis built from the per-rep period (tau-dependent).
+        pulse_length_us_cal = qubit_sigma * 4
+        n_qubit_pulses_cal = 3 if config_cal.get("use_pi_pulse", False) else 2
+        rep_period_us_cal = (
+            n_qubit_pulses_cal * pulse_length_us_cal
+            + tau_i_cal
+            + 0.05
+            + config_cal["readout_length"]
+        )
+        elapsed_avg_ms_cal = (
+            np.arange(len(excited_avg_cal))
+            * average_n_shots_cal
+            * rep_period_us_cal
+            * 1e-3
+        )
+
+        plt.figure(figsize=(10, 4))
+        plt.plot(elapsed_avg_ms_cal, excited_avg_cal, "o-", linewidth=1.5)
+        plt.xlabel("Time since start (ms)")
+        plt.ylabel("Averaged excited-state population")
         plt.ylim(-0.05, 1.05)
         plt.title(
-            f"Modified Ramsey calibration: population vs tau\n"
-            f"f_drive={drive_tag_cal} (Q{Qubit_Pulse}), V={current_voltage_cal:.6f} V, "
-            f"{mr_reps_cal} reps/pt"
+            f"MR calib averaged trace: tau={tau_i_cal:.3f} us "
+            f"(df={df_i_cal * 1e3:.2f} kHz)\n"
+            f"f_ge={f_ge_cal:.6f} MHz, {average_n_shots_cal} shots/point, "
+            f"{mr_reps_cal} reps"
         )
         plt.tight_layout()
-        suffix_cal = (
-            "_pop_vs_tau.png"
-            if n_drive_cal == 1
-            else f"_drv{i_drive_cal:03d}_pop_vs_tau.png"
+        plt.savefig(
+            base_cal
+            + f"_tau{i_tau_cal:03d}_{tau_i_cal:.3f}us_averaged_population.png",
+            dpi=300,
+            bbox_inches="tight",
         )
-        plt.savefig(base_cal + suffix_cal, dpi=300, bbox_inches="tight")
         plt.close()
 
-    # 2D chevron heatmap: excited population vs (symmetric drive freq, tau). The
-    # near-vertical column where P(e) is flat / pinned ~0.5 across tau marks the
-    # zero-detuning (true qubit/parity center) drive frequency.
-    if n_drive_cal > 1:
-        drive_arr_cal = np.array([float(f) for f in drive_list_cal])
+        # SingleShot IQ blobs + g/e separator for this trace (same as the
+        # ModifiedRamsey per-cycle "_iq_labeled_apriori" output): raw shots colored
+        # by assignment, with the calibrated g/e centers and separator overlaid.
+        c0_cal = apriori_sep_cal["g_center"]
+        c1_cal = apriori_sep_cal["e_center"]
+        I_min_cal, I_max_cal = raw_i_cal.min(), raw_i_cal.max()
+        Q_min_cal, Q_max_cal = raw_q_cal.min(), raw_q_cal.max()
+        I_pad_cal = 0.05 * (I_max_cal - I_min_cal if I_max_cal > I_min_cal else 1.0)
+        Q_pad_cal = 0.05 * (Q_max_cal - Q_min_cal if Q_max_cal > Q_min_cal else 1.0)
+        I_line_cal = np.linspace(I_min_cal - I_pad_cal, I_max_cal + I_pad_cal, 400)
+        vertical_line_cal = np.abs(normal_cal[1]) < 1e-12
+        if not vertical_line_cal:
+            Q_line_cal = midpoint_cal[1] - (normal_cal[0] / normal_cal[1]) * (
+                I_line_cal - midpoint_cal[0]
+            )
 
-        def _centers_to_edges(centers):
-            centers = np.asarray(centers, dtype=float)
-            if len(centers) == 1:
-                return np.array([centers[0] - 0.5, centers[0] + 0.5])
-            mids = 0.5 * (centers[1:] + centers[:-1])
-            first = centers[0] - (mids[0] - centers[0])
-            last = centers[-1] + (centers[-1] - mids[-1])
-            return np.concatenate([[first], mids, [last]])
-
-        tau_edges_cal = _centers_to_edges(tau_list_cal)
-        drive_edges_cal = _centers_to_edges(drive_arr_cal)
-
-        plt.figure(figsize=(9, 6))
-        pcm_cal = plt.pcolormesh(
-            tau_edges_cal,
-            drive_edges_cal,
-            mean_excited_cal,
-            shading="auto",
-            cmap="viridis",
-            vmin=0.0,
-            vmax=1.0,
+        plt.figure(figsize=(6, 6))
+        plt.plot(
+            raw_i_cal[binary_cal == 0],
+            raw_q_cal[binary_cal == 0],
+            ".",
+            alpha=iq_plot_alpha_cal,
+            label="Assigned 0",
         )
-        plt.colorbar(pcm_cal, label="Excited-state population")
-        plt.xlabel("tau (us)")
-        plt.ylabel("Symmetric drive frequency (MHz)")
+        plt.plot(
+            raw_i_cal[binary_cal == 1],
+            raw_q_cal[binary_cal == 1],
+            ".",
+            alpha=iq_plot_alpha_cal,
+            label="Assigned 1",
+        )
+        plt.plot(c0_cal[0], c0_cal[1], "o", markersize=10, label="SingleShot g center")
+        plt.plot(c1_cal[0], c1_cal[1], "o", markersize=10, label="SingleShot e center")
+        if vertical_line_cal:
+            plt.axvline(
+                midpoint_cal[0], linestyle="--", linewidth=2, label="g/e separator"
+            )
+        else:
+            plt.plot(I_line_cal, Q_line_cal, "--", linewidth=2, label="g/e separator")
+        plt.xlabel("I")
+        plt.ylabel("Q")
+        plt.xlim(I_min_cal - I_pad_cal, I_max_cal + I_pad_cal)
+        plt.ylim(Q_min_cal - Q_pad_cal, Q_max_cal + Q_pad_cal)
+        plt.gca().set_aspect("equal", adjustable="box")
         plt.title(
-            f"Modified Ramsey calibration chevron: P(e) vs (drive, tau)\n"
-            f"Q{Qubit_Pulse}, V={current_voltage_cal:.6f} V, {mr_reps_cal} reps/pt"
+            f"MR calib IQ: tau={tau_i_cal:.3f} us (df={df_i_cal * 1e3:.2f} kHz)\n"
+            f"f_ge={f_ge_cal:.6f} MHz, V={current_voltage_cal:.6f} V"
         )
+        plt.legend()
         plt.tight_layout()
-        plt.savefig(base_cal + "_pop_vs_drive_tau.png", dpi=300, bbox_inches="tight")
+        plt.savefig(
+            base_cal + f"_tau{i_tau_cal:03d}_{tau_i_cal:.3f}us_iq_labeled.png",
+            dpi=300,
+            bbox_inches="tight",
+        )
         plt.close()
 
-    drive_save_cal = np.array(
-        [np.nan if f is None else float(f) for f in drive_list_cal]
+        excited_avg_all_cal.append(np.asarray(excited_avg_cal))
+        elapsed_avg_ms_all_cal.append(np.asarray(elapsed_avg_ms_cal))
+
+    # Population-vs-tau calibration curve.
+    plt.figure(figsize=(8, 5))
+    plt.plot(tau_list_cal, mean_excited_cal, "o-")
+    plt.xlabel("tau (us)")
+    plt.ylabel("Excited-state population")
+    plt.ylim(-0.05, 1.05)
+    plt.title(
+        f"Modified Ramsey calibration: population vs tau\n"
+        f"f_ge={f_ge_cal:.6f} MHz (Q{Qubit_Pulse}), V={current_voltage_cal:.6f} V, "
+        f"{mr_reps_cal} reps/pt"
     )
+    plt.tight_layout()
+    plt.savefig(base_cal + "_pop_vs_tau.png", dpi=300, bbox_inches="tight")
+    plt.close()
+
     np.savez(
         base_cal + ".npz",
         tau_list=np.array(tau_list_cal),
         df_list=np.array(df_list_cal),
-        drive_list=drive_save_cal,
-        sweep_drive_freq=np.array(sweep_drive_cal),
         mean_excited=np.array(mean_excited_cal),
         mean_i=np.array(mean_i_cal),
         mean_q=np.array(mean_q_cal),
-        excited_avg_all=np.array(excited_avg_all_cal, dtype=object),
-        elapsed_avg_ms_all=np.array(elapsed_avg_ms_all_cal, dtype=object),
+        excited_avg_all=np.array(excited_avg_all_cal),
+        elapsed_avg_ms_all=np.array(elapsed_avg_ms_all_cal),
         f_ge=np.array(f_ge_cal),
         voltage=np.array(current_voltage_cal),
         mr_reps=np.array(mr_reps_cal),
         average_n_shots=np.array(average_n_shots_cal),
         symmetric_ramsey=np.array(symmetric_ramsey_cal),
         symmetric_drive_freq=np.array(
-            np.nan
-            if symmetric_drive_freq_cal is None
+            np.nan if symmetric_drive_freq_cal is None
             else float(symmetric_drive_freq_cal)
         ),
         g_center=np.array(apriori_sep_cal["g_center"]),
