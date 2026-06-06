@@ -525,7 +525,7 @@ ModifiedRamsey_params = {
     "voltage_min": 0.000,  # absolute lower voltage bound [V]
     "voltage_max": 0.05,  # absolute upper voltage bound [V]
     "max_voltage_tries": 1000,  # max search steps per cycle
-    "num_cycles": 100000,  # how many search -> Ramsey cycles to run
+    "num_cycles": 1000000,  # how many search -> Ramsey cycles to run
     "inter_cycle_delay": 10,  # wait [s] between consecutive cycles (0 = no wait)
     "use_pi_pulse": False,
     "center_peak_tol_mhz": 0.03,  # fix
@@ -649,7 +649,7 @@ ModifiedRamsey_params = {
     # use_active_reset is True, and the verification experiment).
     "reset_cycles": 1,
     "reset_readout_relax_delay": 0.0,  # us after each reset readout
-    "post_reset_wait": 0.0,  # us settle after the reset block
+    "post_reset_wait": 2.0,  # us settle after the reset block
     ## TODO: CHANGE READOUT PARAMETERS IN TRANS_PARAMS
 }
 
@@ -1074,8 +1074,8 @@ trans_config = {
     # readout_length alone never changed the Ramsey readout tone. "readout_length"
     # is the ADC integration window. Keep the two equal so the window tracks the
     # tone.
-    "length": 30,  # us – resonator readout tone duration
-    "readout_length": 15,  # us – ADC integration window (keep = "length")
+    "length": 10,  # us – resonator readout tone duration
+    "readout_length": 10,  # us – ADC integration window (keep = "length")
     # "readout_length": 1,  # 15 [us]
     "pulse_gain": cavity_gain,  # [DAC units]
     "pulse_freq": resonator_frequency_center,  # [MHz] actual frequency is this number + "cavity_LO"
