@@ -125,84 +125,99 @@ class CondjProbeProgram(AveragerProgram):
 
 def run_condj_truth_test(soc, soccfg, cfg):
     """
-    Returns dict with the measured |IQ| for a TRUE and a FALSE condition and a
-    plain-language verdict on condj's jump semantics + what it means for active reset.
+    Probes BOTH the jump polarity AND the signedness of the condj comparison,
+    and returns a dict of measured |IQ| per case + plain-language verdicts.
+
+    Four cases (a op b -> expected truth value):
+        A:  5 < 10   TRUE  (signed)   TRUE  (unsigned)   -> polarity reference
+        B:  5 > 10   FALSE (signed)   FALSE (unsigned)   -> polarity reference
+        C: -5 < 10   TRUE  (signed)   FALSE (unsigned: -5 wraps to 2^32-5)
+        D: -5 > 10   FALSE (signed)   TRUE  (unsigned)
+
+    Cases A/B establish which branch (jump vs fall-through) each truth value
+    takes; cases C/D then reveal whether negative register values compare as
+    signed two's complement or as huge unsigned integers. The 2026-06-05/06
+    ActiveResetVerify data (corrective pi firing on every shot with negative
+    accumulated I; ground-state damage tracking the below-zero fraction of the
+    g blob) predicts UNSIGNED. The sign-safe offset fix in mModifiedRamsey /
+    mActiveResetVerify is correct under either outcome; this test pins down
+    the firmware behaviour.
 
     Pass your LIVE `config` from TATQ01-BFE.py as `cfg` (it has the on-resonance
     pulse_freq/pulse_gain and the calibrated res_phase, so the played-vs-skipped
-    readout contrast is large). Fast overrides below keep the test short -- it needs
-    no thermalisation because it tests pure tProc logic, not the qubit.
+    readout contrast is large). Fast overrides below keep the test short -- it
+    needs no thermalisation because it tests pure tProc logic, not the qubit.
     """
-    a, b = 5, 10  # a < b is TRUE; a > b is FALSE
-
-    # Don't inherit a 15 ms relax_delay (that would make 2x200 reps take minutes).
+    # Don't inherit a 15 ms relax_delay (that would make 4x200 reps take minutes).
     fast = {"shots": 200, "soft_avgs": 1, "relax_delay": 5.0}
-    cfg_true = cfg | fast | {"_condj_a": a, "_condj_b": b, "_condj_op": "<"}   # TRUE
-    cfg_false = cfg | fast | {"_condj_a": a, "_condj_b": b, "_condj_op": ">"}  # FALSE
+    cases = {
+        "A (5<10)":  (5, 10, "<", True, True),
+        "B (5>10)":  (5, 10, ">", False, False),
+        "C (-5<10)": (-5, 10, "<", True, False),
+        "D (-5>10)": (-5, 10, ">", False, True),
+    }
+    amps = {}
+    for name, (a, b, op, _, _) in cases.items():
+        c = cfg | fast | {"_condj_a": a, "_condj_b": b, "_condj_op": op}
+        amps[name] = CondjProbeProgram(soccfg, c).acquire(soc)
 
-    amp_true = CondjProbeProgram(soccfg, cfg_true).acquire(soc)
-    amp_false = CondjProbeProgram(soccfg, cfg_false).acquire(soc)
-
-    # "pulse played" == condj did NOT jump. The played branch reads LARGE |IQ|
-    # (on-resonance tone), the skipped branch reads SMALL (~background). Decide
-    # purely on the RELATIVE difference so we don't need an absolute floor.
+    amp_true, amp_false = amps["A (5<10)"], amps["B (5>10)"]
     hi, lo = max(amp_true, amp_false), min(amp_true, amp_false)
     rel_diff = (hi - lo) / hi if hi > 0 else 0.0
 
-    if rel_diff < 0.30:
-        # Same branch for both. "condj never jumps" is ruled out by the ARV data
-        # (if the pi always fired, prep|e> would RISE to ~0.7, not stay ~0.3), so
-        # this is a contrast problem, not a real condj result.
-        verdict = "INCONCLUSIVE"
-        implication = (
-            f"amp_true and amp_false differ by only {rel_diff*100:.0f}% -- can't tell\n"
-            "    played from skipped. This means the readout is OFF-RESONANCE (or gain~0):\n"
-            "    pass your LIVE `config` (on-resonance pulse_freq/pulse_gain), not the\n"
-            "    placeholder cfg. The played branch must read clearly larger than skipped."
-        )
-        jumped_on_true = jumped_on_false = None
-    else:
-        # Larger amp = pulse PLAYED = condj did NOT jump; smaller = SKIPPED = jumped.
-        jumped_on_true = amp_true < amp_false   # TRUE condition skipped the pulse
-        jumped_on_false = amp_false < amp_true  # FALSE condition skipped the pulse
-        if jumped_on_true and not jumped_on_false:
-            verdict = "JUMP-ON-TRUE (standard -- matches the code's assumption)"
-            implication = (
-                "condj matches what active_reset_to_g() assumes, so the reset inversion is\n"
-                "    NOT a condj-sense bug. Look next at reset_ground_below_threshold / the\n"
-                "    live read sign, or readout-induced heating. Ask me to add a pi-fired\n"
-                "    counter (surfaced via di_buf) to localize it."
-            )
-        else:
-            verdict = "JUMP-ON-FALSE (INVERTED vs the code's assumption)"
-            implication = (
-                "THIS IS THE BUG. active_reset_to_g() skips the pi when it should fire and\n"
-                "    fires when it should skip -> reset pumps toward |e>. Fix: invert the skip\n"
-                "    condition (flip reset_skip_op) in mActiveResetVerify.py AND\n"
-                "    mModifiedRamsey.py, then re-run VerifyActiveReset."
-            )
-
-    def _branch(jumped):
-        if jumped is None:
-            return "pulse ? (contrast too small)"
-        return ("pulse SKIPPED -> condj JUMPED" if jumped
-                else "pulse PLAYED -> condj did NOT jump")
+    out = {"amps": amps, "polarity": None, "signedness": None}
 
     print("\n[condj truth test] ============================================")
-    print(f"  |IQ| with condition TRUE  (5<10): {amp_true:.4f}  -> {_branch(jumped_on_true)}")
-    print(f"  |IQ| with condition FALSE (5>10): {amp_false:.4f}  -> {_branch(jumped_on_false)}")
-    print(f"  relative difference: {rel_diff*100:.0f}%")
-    print(f"  VERDICT: condj is {verdict}")
-    print(f"  => {implication}")
-    print("[condj truth test] ============================================\n")
+    for name, amp in amps.items():
+        print(f"  |IQ| case {name}: {amp:.4f}")
 
-    return {
-        "amp_true": amp_true,
-        "amp_false": amp_false,
-        "jumped_on_true": jumped_on_true,
-        "jumped_on_false": jumped_on_false,
-        "verdict": verdict,
-    }
+    if rel_diff < 0.30:
+        out["polarity"] = "INCONCLUSIVE"
+        print(
+            f"  A and B differ by only {rel_diff*100:.0f}% -- can't tell played\n"
+            "    from skipped. The readout is OFF-RESONANCE (or gain~0): pass your\n"
+            "    LIVE `config` (on-resonance pulse_freq/pulse_gain), not a placeholder."
+        )
+        print("[condj truth test] ============================================\n")
+        return out
+
+    # Larger amp = pulse PLAYED = condj did NOT jump; smaller = SKIPPED = jumped.
+    mid = 0.5 * (hi + lo)
+    jumped = {name: amp < mid for name, amp in amps.items()}
+
+    # Polarity from A/B (both interpretations agree on their truth values).
+    if jumped["A (5<10)"] and not jumped["B (5>10)"]:
+        out["polarity"] = "JUMP-ON-TRUE (standard -- matches the code's assumption)"
+        true_jumps = True
+    elif jumped["B (5>10)"] and not jumped["A (5<10)"]:
+        out["polarity"] = "JUMP-ON-FALSE (INVERTED vs the code's assumption!)"
+        true_jumps = False
+    else:
+        out["polarity"] = f"INCONSISTENT (A jumped={jumped['A (5<10)']}, B jumped={jumped['B (5>10)']})"
+        print(f"  VERDICT: {out['polarity']} -- rerun / check contrast.")
+        print("[condj truth test] ============================================\n")
+        return out
+
+    # Signedness from C/D: under signed semantics C is TRUE / D is FALSE;
+    # under unsigned semantics C is FALSE / D is TRUE.
+    c_truth = jumped["C (-5<10)"] == true_jumps   # truth value the fw assigned to C
+    d_truth = jumped["D (-5>10)"] == true_jumps
+    if c_truth and not d_truth:
+        out["signedness"] = "SIGNED (two's complement -- negative I compares correctly)"
+    elif d_truth and not c_truth:
+        out["signedness"] = (
+            "UNSIGNED -- negative accumulated I compares as a huge positive.\n"
+            "    This is the active-reset bug seen in the 06-05/06 ARV data. The\n"
+            "    sign-safe offset (cmp_offset) now in mModifiedRamsey.py /\n"
+            "    mActiveResetVerify.py neutralizes it."
+        )
+    else:
+        out["signedness"] = f"INCONSISTENT (C truth={c_truth}, D truth={d_truth})"
+
+    print(f"  VERDICT polarity  : {out['polarity']}")
+    print(f"  VERDICT signedness: {out['signedness']}")
+    print("[condj truth test] ============================================\n")
+    return out
 
 
 # ── HOW TO RUN ───────────────────────────────────────────────────────────────

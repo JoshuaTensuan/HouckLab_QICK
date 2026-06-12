@@ -648,7 +648,13 @@ ModifiedRamsey_params = {
     # Active-reset readout rounds per shot (used by both the real Ramsey, when
     # use_active_reset is True, and the verification experiment).
     "reset_cycles": 1,
-    "reset_readout_relax_delay": 0.0,  # us after each reset readout
+    # Delay between the conditioning readout (tone end) and the corrective pi.
+    # The Q2 readout resonator has kappa/2pi = 190 kHz (1/kappa = 0.84 us,
+    # fitted from TransmissionFF 2026-06-06), so 5 us = 6/kappa leaves <0.3%
+    # of the readout photons; firing the pi at 0 us plays it on a fully
+    # Stark-shifted qubit. NOTE: this syncdelay does NOT delay the threshold
+    # read (the accumulated I is already latched); it only delays the pi.
+    "reset_readout_relax_delay": 5.0,  # us after each reset readout
     "post_reset_wait": 2.0,  # us settle after the reset block
     ## TODO: CHANGE READOUT PARAMETERS IN TRANS_PARAMS
 }
@@ -733,7 +739,10 @@ ActiveResetVerify_params = {
     "verify_relax_delay": 5.0,  # us between consecutive verification readouts
     "reps": 2000,  # single shots per condition
     "reset_cycles": 1,  # measure->feedback rounds per shot
-    "reset_readout_relax_delay": 1.0,  # us after each reset readout
+    # 5 us = 6/kappa (kappa/2pi = 190 kHz measured) so the corrective pi fires
+    # on a photon-free qubit; keep equal to ModifiedRamsey_params so ARV
+    # validates the same timing the Ramsey uses.
+    "reset_readout_relax_delay": 5.0,  # us after each reset readout
     "post_reset_wait": 0.0,  # us settle after the reset block
     "relax_delay": 3000,  # us between reps (>= 3*T1 to re-thermalise)
     "plotDisp": True,
@@ -4766,15 +4775,22 @@ if RunActiveResetVerify:
         "Qubit_number": Qubit_Readout,
     }
 
-    # 3) Four conditions: prep |g>/|e>  ×  reset off/on.
+    # 3) Four conditions: prep |g>/|e>  ×  reset off/on, plus a force-pi
+    #    diagnostic: the corrective pi fires UNCONDITIONALLY after the
+    #    conditioning readout, measuring the bare post-readout pi fidelity
+    #    decoupled from the threshold decision (prep|e>_forcePI should match
+    #    prep|g>_resetOFF if the pi is good; prep|g>_forcePI should match
+    #    prep|e>_resetOFF).
     arv_conditions = [
-        ("prep|g>_resetOFF", False, False),
-        ("prep|e>_resetOFF", True, False),
-        ("prep|g>_resetON", False, True),
-        ("prep|e>_resetON", True, True),
+        ("prep|g>_resetOFF", False, False, False),
+        ("prep|e>_resetOFF", True, False, False),
+        ("prep|g>_resetON", False, True, False),
+        ("prep|e>_resetON", True, True, False),
+        ("prep|e>_forcePI", True, True, True),
+        ("prep|g>_forcePI", False, True, True),
     ]
     arv_results = {}
-    for arv_label, arv_prep, arv_reset in arv_conditions:
+    for arv_label, arv_prep, arv_reset, arv_force in arv_conditions:
         print(f"\n[ActiveResetVerify] Condition: {arv_label}")
         cfg_arv = (
             config
@@ -4782,6 +4798,7 @@ if RunActiveResetVerify:
             | {
                 "prep_excited": arv_prep,
                 "use_active_reset": arv_reset,
+                "reset_force_pi": arv_force,
             }
         )
         inst_arv = ActiveResetVerify(
@@ -4805,7 +4822,7 @@ if RunActiveResetVerify:
     read_idx_arv = np.arange(ActiveResetVerify_params["n_verify_reads"])
     timestamp_arv = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     plt.figure(figsize=(8, 5))
-    for arv_label, _, _ in arv_conditions:
+    for arv_label, *_ in arv_conditions:
         plt.plot(
             read_idx_arv, arv_results[arv_label], "o-", linewidth=1.5, label=arv_label
         )
@@ -4837,7 +4854,7 @@ if RunActiveResetVerify:
         res_phase=arv_calib["res_phase"],
         g_center=arv_calib["g_center"],
         e_center=arv_calib["e_center"],
-        **{f"p_ground_{lbl}": arv_results[lbl] for lbl, _, _ in arv_conditions},
+        **{f"p_ground_{lbl}": arv_results[lbl] for lbl, *_ in arv_conditions},
     )
 
     # 5) Verdict.
@@ -4850,6 +4867,16 @@ if RunActiveResetVerify:
     print(f"  prep|e> reset OFF : P(|g>)={pg_e_off:.3f}  (control, should be low)")
     print(f"  prep|g> reset ON  : P(|g>)={pg_g_on:.3f}")
     print(f"  prep|e> reset ON  : P(|g>)={pg_e_on:.3f}  (key proof)")
+    pg_e_force = float(np.mean(arv_results["prep|e>_forcePI"][:1]))
+    pg_g_force = float(np.mean(arv_results["prep|g>_forcePI"][:1]))
+    print(
+        f"  prep|e> force-pi  : P(|g>) read0 = {pg_e_force:.3f}  "
+        f"(bare post-readout pi fidelity; expect ~ prep|g> baseline)"
+    )
+    print(
+        f"  prep|g> force-pi  : P(|g>) read0 = {pg_g_force:.3f}  "
+        f"(expect ~ prep|e> reset-OFF baseline)"
+    )
     recovery_arv = pg_e_on - pg_e_off
     print(f"  reset recovery from |e> : dP(|g>) = {recovery_arv:+.3f}")
     if pg_e_on >= 0.9 * pg_g_on and recovery_arv >= 0.3:

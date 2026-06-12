@@ -69,6 +69,20 @@ class ActiveResetVerifyProgram(AveragerProgram):
         self.use_active_reset = cfg.get("use_active_reset", False)
         self.reset_cycles = int(cfg.get("reset_cycles", 1)) if self.use_active_reset else 0
         self.reset_skip_op = "<" if cfg.get("reset_ground_below_threshold", True) else ">"
+        # Diagnostic: fire the corrective pi UNCONDITIONALLY (skip the condj).
+        # Measures the bare pi fidelity in the post-readout environment,
+        # decoupled from the threshold decision.
+        self.reset_force_pi = cfg.get("reset_force_pi", False)
+        # Sign-safe comparison offset. ARV data (2026-06-05/06) shows the
+        # corrective pi firing on every shot whose accumulated I is NEGATIVE
+        # (ground-state damage tracked the below-zero fraction of the g blob;
+        # the g_I~0 sweep lost exactly half its ground shots), i.e. the deployed
+        # tProc compares r_read/r_thresh as if unsigned. Adding the same large
+        # positive constant to BOTH operands makes them strictly positive, so
+        # signed and unsigned comparison agree and the decision is correct
+        # under either firmware behaviour. 2^24 >> any |raw I| (~1e4-1e5) and
+        # offset+|raw| << 2^30 (immediate sign-bit limit).
+        self.cmp_offset = 1 << 24
         self.n_verify_reads = int(cfg.get("n_verify_reads", 5))
         if self.n_verify_reads < 1:
             raise ValueError("cfg['n_verify_reads'] must be >= 1.")
@@ -129,7 +143,14 @@ class ActiveResetVerifyProgram(AveragerProgram):
             # tProc compares (collect_shots divides accumulated I by the window len).
             ro_norm = self.us2cycles(cfg["readout_length"], ro_ch=0)
             raw_threshold = int(round(cfg["readout_threshold"] * ro_norm))
-            self.regwi(self.q_rp, self.r_thresh, raw_threshold)
+            if abs(raw_threshold) >= self.cmp_offset:
+                raise ValueError(
+                    f"raw_threshold {raw_threshold} exceeds the sign-safe "
+                    f"comparison offset {self.cmp_offset}; increase cmp_offset."
+                )
+            # r_thresh holds threshold + offset; r_read gets the same offset
+            # added (mathi) right after each read, before the condj.
+            self.regwi(self.q_rp, self.r_thresh, raw_threshold + self.cmp_offset)
             # DIAGNOSTIC: shows the exact decision the reset will make. The corrective
             # pi is SKIPPED when (r_read reset_skip_op r_thresh) is true. For a correct
             # reset this must skip when the qubit is in |g>. Cross-check against the
@@ -138,9 +159,11 @@ class ActiveResetVerifyProgram(AveragerProgram):
                 f"[ActiveResetVerify reset cfg] reset_ground_below_threshold="
                 f"{cfg.get('reset_ground_below_threshold', True)}, skip_op='"
                 f"{self.reset_skip_op}', readout_threshold(norm)="
-                f"{cfg['readout_threshold']:.6f}, raw_threshold(reg)={raw_threshold}, "
-                f"reset_cycles={self.reset_cycles} "
-                f"(skip the pi when r_read {self.reset_skip_op} {raw_threshold})"
+                f"{cfg['readout_threshold']:.6f}, raw_threshold={raw_threshold}, "
+                f"reset_cycles={self.reset_cycles}, force_pi={self.reset_force_pi} "
+                f"(skip the pi when r_read+{self.cmp_offset} {self.reset_skip_op} "
+                f"{raw_threshold + self.cmp_offset}; offset makes the compare "
+                f"sign-safe)"
             )
 
         self.sync_all(self.us2cycles(0.2))
@@ -167,8 +190,15 @@ class ActiveResetVerifyProgram(AveragerProgram):
 
             self.read(ro_ch, self.q_rp, "lower", self.r_read)
 
-            self.condj(self.q_rp, self.r_read, self.reset_skip_op,
-                       self.r_thresh, done_label)
+            # Offset the (possibly negative) accumulated I into strictly
+            # positive territory so the comparison below is sign-safe (see
+            # cmp_offset comment in initialize()). r_thresh already carries
+            # the same offset.
+            self.mathi(self.q_rp, self.r_read, self.r_read, "+", self.cmp_offset)
+
+            if not self.reset_force_pi:
+                self.condj(self.q_rp, self.r_read, self.reset_skip_op,
+                           self.r_thresh, done_label)
 
             self.set_pulse_registers(
                 ch=cfg["qubit_ch"],
