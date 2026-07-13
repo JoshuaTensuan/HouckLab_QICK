@@ -43,6 +43,10 @@ class ModifiedRamseyProgram(AveragerProgram):
     cfg["pi_gain"]     : DAC gain for the pi pulse, required if use_pi_pulse=True
                          or if use_active_reset=True (same pi pulse is reused
                          for the reset corrective flip).
+    cfg["mr_relax_delay"]:
+                         optional inter-shot delay in us after the final Ramsey
+                         readout when reset_from_ramsey_readout is disabled
+                         (default 0). This is separate from spectroscopy delays.
 
     Active-reset config:
     cfg["use_active_reset"]    : if True, prepend active reset to |g> to every
@@ -76,6 +80,18 @@ class ModifiedRamseyProgram(AveragerProgram):
     def initialize(self):
         cfg = self.cfg
 
+        if cfg["df"] <= 0:
+            raise ValueError("cfg['df'] must be positive")
+        if cfg["sigma"] <= 0:
+            raise ValueError("cfg['sigma'] must be positive")
+        if cfg["readout_length"] <= 0:
+            raise ValueError("cfg['readout_length'] must be positive")
+        if not cfg["ro_chs"]:
+            raise ValueError("cfg['ro_chs'] must contain at least one readout channel")
+        for delay_key in ("adc_trig_offset", "mr_relax_delay"):
+            if cfg.get(delay_key, 0.0) < 0:
+                raise ValueError(f"cfg['{delay_key}'] must be non-negative")
+
         self.q_rp = self.ch_page(cfg["qubit_ch"])
         self.r_wait = 3
         self.r_phase = self.sreg(cfg["qubit_ch"], "phase")
@@ -97,8 +113,16 @@ class ModifiedRamseyProgram(AveragerProgram):
         if self.reset_from_ramsey_readout:
             self.use_active_reset = False
         self.reset_cycles = int(cfg.get("reset_cycles", 1)) if self.use_active_reset else 0
+        if self.use_active_reset and self.reset_cycles < 1:
+            raise ValueError(
+                "cfg['reset_cycles'] must be >= 1 when use_active_reset=True"
+            )
         # Either feedback path needs the discrimination threshold + skip test.
         self.needs_feedback = self.use_active_reset or self.reset_from_ramsey_readout
+        if self.needs_feedback:
+            for delay_key in ("reset_readout_relax_delay", "post_reset_wait"):
+                if cfg.get(delay_key, 0.0) < 0:
+                    raise ValueError(f"cfg['{delay_key}'] must be non-negative")
         # condj jumps (skips the corrective pi) when the qubit is already in |g>.
         # If |g> sits below threshold in I, the "already ground" test is I < thresh.
         self.reset_skip_op = "<" if cfg.get("reset_ground_below_threshold", True) else ">"
@@ -150,10 +174,53 @@ class ModifiedRamseyProgram(AveragerProgram):
         self.declare_gen(ch=cfg["res_ch"], nqz=cfg["nqz"])
         self.declare_gen(ch=cfg["qubit_ch"], nqz=cfg["qubit_nqz"])
 
+        # QICK v1 uses raw cycles in declare_readout/set_pulse_registers. Convert
+        # each duration with the owning BFE hardware clock: trigger offsets and
+        # delays use tProc cycles, ADC windows use each readout's output clock,
+        # and the resonator tone uses its generator fabric clock.
+        required_tone_us = cfg["adc_trig_offset"] + cfg["readout_length"]
+        cfg.setdefault("length", required_tone_us)
+        if cfg["length"] < required_tone_us:
+            raise ValueError(
+                "cfg['length'] must cover cfg['adc_trig_offset'] + "
+                f"cfg['readout_length'] ({cfg['length']} us < "
+                f"{required_tone_us} us)"
+            )
+
+        self.adc_trig_offset_cycles = self.us2cycles(cfg["adc_trig_offset"])
+        requested_tone_cycles = self.us2cycles(
+            cfg["length"], gen_ch=cfg["res_ch"]
+        )
+        self.readout_window_cycles = {
+            ch: self.us2cycles(cfg["readout_length"], ro_ch=ch)
+            for ch in cfg["ro_chs"]
+        }
+
+        # Cross-clock rounding can make an equal-us tone a fraction of one DAC
+        # fabric cycle short. Extend by only the exact number of cycles required
+        # to cover the quantized ADC window on every configured readout channel.
+        f_time = self.soccfg["tprocs"][0]["f_time"]
+        res_f_fabric = self.soccfg["gens"][cfg["res_ch"]]["f_fabric"]
+        adc_end_tproc = max(
+            self.adc_trig_offset_cycles
+            + self.readout_window_cycles[ch]
+            * f_time / self.soccfg["readouts"][ch]["f_output"]
+            for ch in cfg["ro_chs"]
+        )
+        required_tone_cycles = int(np.ceil(
+            adc_end_tproc * res_f_fabric / f_time - 1e-12
+        ))
+        self.readout_tone_cycles = max(
+            requested_tone_cycles, required_tone_cycles
+        )
+        self.readout_tone_extension_cycles = (
+            self.readout_tone_cycles - requested_tone_cycles
+        )
+
         for ch in cfg["ro_chs"]:
             self.declare_readout(
                 ch=ch,
-                length=self.us2cycles(cfg["readout_length"]),
+                length=self.readout_window_cycles[ch],
                 freq=cfg["pulse_freq"],
                 gen_ch=cfg["res_ch"]
             )
@@ -195,7 +262,7 @@ class ModifiedRamseyProgram(AveragerProgram):
             freq=f_res,
             phase=cfg["res_phase"],
             gain=cfg["pulse_gain"],
-            length=self.us2cycles(cfg["length"])
+            length=self.readout_tone_cycles
         )
 
         if self.needs_feedback:
@@ -214,7 +281,7 @@ class ModifiedRamseyProgram(AveragerProgram):
             # length, so the threshold the user reads off the IQ plot is in those
             # normalized units. The tProc compares the RAW accumulator, so scale
             # the threshold back up by the same window length here.
-            ro_norm = self.us2cycles(cfg["readout_length"], ro_ch=0)
+            ro_norm = self.readout_window_cycles[cfg["ro_chs"][0]]
             raw_threshold = int(round(cfg["readout_threshold"] * ro_norm))
             if abs(raw_threshold) >= self.cmp_offset:
                 raise ValueError(
@@ -259,7 +326,7 @@ class ModifiedRamseyProgram(AveragerProgram):
             self.measure(
                 pulse_ch=cfg["res_ch"],
                 adcs=self.ro_chs,
-                adc_trig_offset=self.us2cycles(cfg["adc_trig_offset"]),
+                adc_trig_offset=self.adc_trig_offset_cycles,
                 wait=True,
                 syncdelay=self.us2cycles(cfg.get("reset_readout_relax_delay", 1.0))
             )
@@ -373,8 +440,8 @@ class ModifiedRamseyProgram(AveragerProgram):
             self.sync_all()
             self.sync(self.q_rp, self.r_wait)
 
-        # Final pi/2. Phase (180 deg default, 0 deg if flip_final_pi2) sets the
-        # parity -> computational-state mapping; see class docstring.
+        # Final pi/2. Phase is 180/0 deg in standard mode and 90/270 deg in
+        # symmetric mode; flip_final_pi2 selects the second value in each pair.
         self.set_pulse_registers(
             ch=cfg["qubit_ch"],
             style="arb",
@@ -386,18 +453,18 @@ class ModifiedRamseyProgram(AveragerProgram):
         self.pulse(ch=cfg["qubit_ch"])
         self.sync_all(self.us2cycles(0.05))
 
-        # Readout. Normally no relax delay (syncdelay=0). With
-        # reset_from_ramsey_readout the same readout also conditions the corrective
-        # pi, so let the resonator ring down (reset_readout_relax_delay) before the
-        # conditional flip.
+        # Readout. With reset_from_ramsey_readout this same measurement conditions
+        # the corrective pi, so use the ringdown delay before feedback. Otherwise
+        # use the explicit MR inter-shot delay (zero by default).
         final_syncdelay = (
             self.us2cycles(cfg.get("reset_readout_relax_delay", 1.0))
-            if self.reset_from_ramsey_readout else 0
+            if self.reset_from_ramsey_readout
+            else self.us2cycles(cfg.get("mr_relax_delay", 0.0))
         )
         self.measure(
             pulse_ch=cfg["res_ch"],
             adcs=self.ro_chs,
-            adc_trig_offset=self.us2cycles(cfg["adc_trig_offset"]),
+            adc_trig_offset=self.adc_trig_offset_cycles,
             wait=True,
             syncdelay=final_syncdelay
         )
@@ -413,17 +480,29 @@ class ModifiedRamseyProgram(AveragerProgram):
                 start_src="internal", progress=False):
         # One readout per reset cycle plus the single final Ramsey readout.
         self.reads_per_rep = self.reset_cycles + 1
+        if (
+            readouts_per_experiment is not None
+            and readouts_per_experiment != self.reads_per_rep
+        ):
+            raise ValueError(
+                "readouts_per_experiment must equal reset_cycles + 1 "
+                f"({self.reads_per_rep}) for ModifiedRamseyProgram"
+            )
         super().acquire(
             soc,
             readouts_per_experiment=self.reads_per_rep,
             load_pulses=load_pulses,
             start_src=start_src,
-            progress=progress
+            progress=progress,
+            threshold=threshold,
+            angle=angle,
+            save_experiments=save_experiments,
         )
         return self.collect_shots()
 
     def collect_shots(self):
-        norm = self.us2cycles(self.cfg["readout_length"], ro_ch=0)
+        ro_ch = self.cfg["ro_chs"][0]
+        norm = self.us2cycles(self.cfg["readout_length"], ro_ch=ro_ch)
         reads_per_rep = getattr(self, "reads_per_rep", 1)
         # Readout ii of each rep lives at di_buf[ch][ii::reads_per_rep]; the final
         # Ramsey readout is the last one in each rep (the earlier ones are resets).
@@ -462,6 +541,19 @@ class ModifiedRamsey(ExperimentClass):
         shots_i = np.asarray(shots_i).ravel()
         shots_q = np.asarray(shots_q).ravel()
 
+        # QICK streamer stats include transfer/polling overhead, so retain them
+        # as an end-to-end diagnostic without using them as the physical shot axis.
+        streamer_elapsed_s = np.nan
+        streamer_average_rep_period_us = np.nan
+        prog_stats = getattr(prog, "stats", None)
+        if prog_stats:
+            last_elapsed_s, last_shots, _, _ = prog_stats[-1]
+            streamer_elapsed_s = float(last_elapsed_s)
+            if last_shots:
+                streamer_average_rep_period_us = (
+                    streamer_elapsed_s * 1e6 / float(last_shots)
+                )
+
         data = {
             'config': self.cfg,
             'data': {
@@ -496,14 +588,23 @@ class ModifiedRamsey(ExperimentClass):
                     if self.cfg.get("symmetric_drive_freq", None) is not None
                     else np.nan
                 ),
-                'use_active_reset': self.cfg.get("use_active_reset", False),
-                'reset_from_ramsey_readout': self.cfg.get(
-                    "reset_from_ramsey_readout", False
+                'use_active_reset': (
+                    self.cfg.get("use_active_reset", False)
+                    and not self.cfg.get("reset_from_ramsey_readout", False)
+                ),
+                'reset_from_ramsey_readout': bool(
+                    self.cfg.get("reset_from_ramsey_readout", False)
                 ),
                 'reset_cycles': (
                     int(self.cfg.get("reset_cycles", 1))
-                    if self.cfg.get("use_active_reset", False) else 0
+                    if (
+                        self.cfg.get("use_active_reset", False)
+                        and not self.cfg.get("reset_from_ramsey_readout", False)
+                    )
+                    else 0
                 ),
+                'streamer_elapsed_s': streamer_elapsed_s,
+                'streamer_average_rep_period_us': streamer_average_rep_period_us,
             }
         }
         self.data = data

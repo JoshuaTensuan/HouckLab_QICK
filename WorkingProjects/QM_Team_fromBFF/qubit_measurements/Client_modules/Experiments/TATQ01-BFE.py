@@ -98,6 +98,159 @@ from WorkingProjects.QM_Team_fromBFF.qubit_measurements.Client_modules.Experimen
 )
 
 
+def modified_ramsey_timing(soccfg, cfg):
+    """Mirror the BFE QICK-v1 schedule and return one repetition's timing.
+
+    This handles both feedback strategies used here: a dedicated start-of-shot
+    active reset and the BFE-specific reset that reuses the final Ramsey readout.
+    It excludes one-time initialization, instruction latency, and data transfer.
+    """
+    res_ch = cfg["res_ch"]
+    qubit_ch = cfg["qubit_ch"]
+    ro_chs = cfg["ro_chs"]
+    if not ro_chs:
+        raise ValueError("cfg['ro_chs'] must contain at least one readout channel")
+    if cfg["df"] <= 0:
+        raise ValueError("cfg['df'] must be positive")
+    if cfg["sigma"] <= 0:
+        raise ValueError("cfg['sigma'] must be positive")
+    if cfg["readout_length"] <= 0:
+        raise ValueError("cfg['readout_length'] must be positive")
+
+    reset_from_readout = bool(cfg.get("reset_from_ramsey_readout", False))
+    use_active_reset = bool(cfg.get("use_active_reset", False)) and not reset_from_readout
+    delay_keys = ["adc_trig_offset", "mr_relax_delay"]
+    if use_active_reset or reset_from_readout:
+        delay_keys.extend(["reset_readout_relax_delay", "post_reset_wait"])
+    for delay_key in delay_keys:
+        if cfg.get(delay_key, 0.0) < 0:
+            raise ValueError(f"cfg['{delay_key}'] must be non-negative")
+
+    required_tone_us = cfg["adc_trig_offset"] + cfg["readout_length"]
+    if cfg["length"] < required_tone_us:
+        raise ValueError(
+            "cfg['length'] must cover cfg['adc_trig_offset'] + "
+            f"cfg['readout_length'] ({cfg['length']} us < {required_tone_us} us)"
+        )
+
+    f_time = float(soccfg["tprocs"][0]["f_time"])
+    res_f_fabric = float(soccfg["gens"][res_ch]["f_fabric"])
+    qubit_f_fabric = float(soccfg["gens"][qubit_ch]["f_fabric"])
+
+    requested_tone_cycles = soccfg.us2cycles(cfg["length"], gen_ch=res_ch)
+    adc_offset_cycles = soccfg.us2cycles(cfg["adc_trig_offset"])
+    window_cycles = {
+        int(ch): soccfg.us2cycles(cfg["readout_length"], ro_ch=ch)
+        for ch in ro_chs
+    }
+    adc_end_by_ch = {
+        int(ch): (
+            adc_offset_cycles
+            + window_cycles[int(ch)]
+            * f_time / float(soccfg["readouts"][ch]["f_output"])
+        )
+        for ch in ro_chs
+    }
+    adc_end = max(adc_end_by_ch.values())
+    required_tone_cycles = int(np.ceil(
+        adc_end * res_f_fabric / f_time - 1e-12
+    ))
+    tone_cycles = max(requested_tone_cycles, required_tone_cycles)
+    tone_end = tone_cycles * f_time / res_f_fabric
+    readout_slot_cycles = int(max(tone_end, adc_end))
+
+    qubit_native_cycles = soccfg.us2cycles(
+        cfg["sigma"] * 4, gen_ch=qubit_ch
+    )
+    qubit_pulse_cycles = int(
+        qubit_native_cycles * f_time / qubit_f_fabric
+    )
+    use_pi_pulse = bool(cfg.get("use_pi_pulse", False))
+    ramsey_pulse_count = 3 if use_pi_pulse else 2
+    wait_request_us = (
+        1.0 / (4.0 * cfg["df"])
+        if use_pi_pulse else 1.0 / (2.0 * cfg["df"])
+    )
+    wait_count = 2 if use_pi_pulse else 1
+    wait_cycles = wait_count * soccfg.us2cycles(wait_request_us)
+    final_padding_cycles = soccfg.us2cycles(0.05)
+    mr_relax_cycles = (
+        0 if reset_from_readout
+        else soccfg.us2cycles(cfg.get("mr_relax_delay", 0.0))
+    )
+    reset_delay_cycles = (
+        soccfg.us2cycles(cfg.get("reset_readout_relax_delay", 1.0))
+        if use_active_reset or reset_from_readout else 0
+    )
+    post_reset_cycles = (
+        soccfg.us2cycles(cfg.get("post_reset_wait", 0.0))
+        if use_active_reset or reset_from_readout else 0
+    )
+    reset_cycles = int(cfg.get("reset_cycles", 1)) if use_active_reset else 0
+    if use_active_reset and reset_cycles < 1:
+        raise ValueError(
+            "cfg['reset_cycles'] must be >= 1 when use_active_reset=True"
+        )
+
+    start_reset_block_cycles = (
+        reset_cycles
+        * (readout_slot_cycles + reset_delay_cycles + qubit_pulse_cycles)
+        + (post_reset_cycles if reset_cycles else 0)
+    )
+    ramsey_core_cycles = (
+        ramsey_pulse_count * qubit_pulse_cycles
+        + wait_cycles
+        + final_padding_cycles
+    )
+    final_readout_block_cycles = readout_slot_cycles
+    if reset_from_readout:
+        # The final readout is followed by ringdown, a runtime-conditional pi,
+        # and a shared sync. Compile-time scheduling reserves the pi on both paths.
+        final_readout_block_cycles += (
+            reset_delay_cycles + qubit_pulse_cycles + post_reset_cycles
+        )
+    else:
+        final_readout_block_cycles += mr_relax_cycles
+
+    scheduled_cycles = (
+        start_reset_block_cycles + ramsey_core_cycles + final_readout_block_cycles
+    )
+    to_us = lambda cycles: float(cycles / f_time)
+    return {
+        "scheduled_rep_period_us": to_us(scheduled_cycles),
+        "scheduled_rep_period_tproc_cycles": int(scheduled_cycles),
+        "start_reset_block_us": to_us(start_reset_block_cycles),
+        "ramsey_core_us": to_us(ramsey_core_cycles),
+        "final_readout_block_us": to_us(final_readout_block_cycles),
+        "readout_slot_us": to_us(readout_slot_cycles),
+        "resonator_tone_us": float(tone_cycles / res_f_fabric),
+        "requested_resonator_tone_us": float(
+            requested_tone_cycles / res_f_fabric
+        ),
+        "tone_quantization_extension_cycles": int(
+            tone_cycles - requested_tone_cycles
+        ),
+        "tone_coverage_margin_us": float((tone_end - adc_end) / f_time),
+        "qubit_pulse_us": to_us(qubit_pulse_cycles),
+        "ramsey_qubit_pulse_count": int(ramsey_pulse_count),
+        "ramsey_wait_us": to_us(wait_cycles),
+        "final_padding_us": to_us(final_padding_cycles),
+        "mr_relax_delay_us": to_us(mr_relax_cycles),
+        "use_active_reset": use_active_reset,
+        "reset_from_ramsey_readout": reset_from_readout,
+        "reset_cycles": int(reset_cycles),
+        "reset_readout_relax_delay_us": to_us(reset_delay_cycles),
+        "post_reset_wait_us": to_us(post_reset_cycles),
+        "f_time_mhz": f_time,
+        "res_f_fabric_mhz": res_f_fabric,
+        "qubit_f_fabric_mhz": qubit_f_fabric,
+        "ro_f_output_mhz": {
+            int(ch): float(soccfg["readouts"][ch]["f_output"])
+            for ch in ro_chs
+        },
+    }
+
+
 def _extract_iq_from_singleshot_data(data_ss, state="g"):
     """
     Extracts SingleShotProgramFFMUX IQ arrays.
@@ -293,8 +446,17 @@ def wire_reset_into_mr_cfg(
     active reset is left off. Idempotent, so it is safe to re-call on ss_cal
     refreshes to update only the (drifting) threshold.
     """
+    # Always write both switches so reusing mr_cfg cannot retain a stale mode.
     if not (use_active_reset or reset_from_readout):
+        mr_cfg["use_active_reset"] = False
+        mr_cfg["reset_from_ramsey_readout"] = False
+        mr_cfg["reset_cycles"] = 0
         return
+    if apriori_sep is None:
+        raise RuntimeError(
+            "ModifiedRamsey feedback reset requires an apriori SingleShot "
+            "separator; set use_apriori_separator=True."
+        )
     g = np.asarray(apriori_sep["g_center"])
     e = np.asarray(apriori_sep["e_center"])
     mr_cfg["readout_threshold"] = float(0.5 * (g[0] + e[0]))
@@ -305,7 +467,10 @@ def wire_reset_into_mr_cfg(
     mr_cfg["post_reset_wait"] = mr_params.get("post_reset_wait", 0.0)
     if reset_from_readout:
         mr_cfg["reset_from_ramsey_readout"] = True
+        mr_cfg["use_active_reset"] = False
+        mr_cfg["reset_cycles"] = 0
     else:
+        mr_cfg["reset_from_ramsey_readout"] = False
         mr_cfg["use_active_reset"] = True
         mr_cfg["reset_cycles"] = int(mr_params.get("reset_cycles", 1))
 
@@ -490,8 +655,8 @@ Run2ToneChargeDispersionQuasiCW = False  # new automated mode
 # Modified Ramsey for charge-parity switching: two-tone search -> fixed-tau Ramsey.
 # tau is automatically set to 1/(2*df) where df is the measured peak separation.
 # f_ge is automatically set to the higher-frequency peak.
-# relax_delay must be set to >= 3-5 * T1 so the qubit thermalises between shots
-# (hardware active reset not available in AveragerProgram; thermal reset is sufficient).
+# The Modified-Ramsey block below uses measurement-feedback reset; the long
+# relax_delay here applies only to the preceding two-tone search/calibration.
 RunModifiedRamsey = True
 
 TwoToneChargeDispersion_params = {
@@ -570,10 +735,14 @@ ModifiedRamsey_params = {
     # --- Modified Ramsey settings ---
     # tau is computed automatically as 1 / (2 * peak_sep_MHz)
     # f_ge is set automatically to the higher-frequency peak
-    # No relax delay: the measurement collapses the qubit and acts as reset.
+    # No passive relax delay: measurement plus the conditional pi resets the qubit.
     "mr_reps": 100000,  # number of single-shot Ramsey measurements per cycle
     # "mr_reps": 500000,  # number of single-shot Ramsey measurements per cycle
     "average_n_shots": 100,
+    # Optional delay after the final Ramsey readout when feedback does not reuse
+    # that readout. Ignored by reset_from_ramsey_readout, which instead uses the
+    # ringdown + corrective-pi + post-reset timing below.
+    "mr_relax_delay": 0.0,
     # Marker transparency for the per-cycle IQ scatter plots. Lower = more
     # transparent, so dense overlapping shots are easier to resolve individually.
     "iq_plot_alpha": 0.5,
@@ -743,7 +912,8 @@ ActiveResetVerify_params = {
     # on a photon-free qubit; keep equal to ModifiedRamsey_params so ARV
     # validates the same timing the Ramsey uses.
     "reset_readout_relax_delay": 5.0,  # us after each reset readout
-    "post_reset_wait": 0.0,  # us settle after the reset block
+    # Match ModifiedRamsey_params so the verifier exercises the same post-pi settle.
+    "post_reset_wait": 2.0,  # us settle after the reset block
     "relax_delay": 3000,  # us between reps (>= 3*T1 to re-thermalise)
     "plotDisp": True,
 }
@@ -1077,14 +1247,10 @@ qubit_flattop = Qubit_Parameters[str(Qubit_Pulse)]["Qubit"]["flattop_length"]
 trans_config = {
     "reps": 1000,  # this will used for all experiements below unless otherwise changed in between trials
     "pulse_style": "const",  # --Fixed
-    # Resonator readout length [us]. "length" sets the readout TONE/pulse duration
-    # (mModifiedRamsey plays the res pulse for us2cycles(cfg["length"])); previously
-    # it was NOT set here, so it fell back to BaseConfig ("length": 30) and editing
-    # readout_length alone never changed the Ramsey readout tone. "readout_length"
-    # is the ADC integration window. Keep the two equal so the window tracks the
-    # tone.
-    "length": 10,  # us – resonator readout tone duration
-    "readout_length": 10,  # us – ADC integration window (keep = "length")
+    # "readout_length" is the ADC integration window. The ADC starts one
+    # adc_trig_offset after the tone, so "length" must cover their sum.
+    "length": 11,  # us - 1 us ADC offset + 10 us integration window
+    "readout_length": 10,  # us - ADC integration window
     # "readout_length": 1,  # 15 [us]
     "pulse_gain": cavity_gain,  # [DAC units]
     "pulse_freq": resonator_frequency_center,  # [MHz] actual frequency is this number + "cavity_LO"
@@ -1123,6 +1289,10 @@ config = (
 )  ### note that UpdateConfig will overwrite elements in BaseConfig
 print(config)
 config["FF_Qubits"] = FF_Qubits
+# The script later rebuilds `config` for the 5-us SingleShot family. Preserve the
+# 10-us Modified-Ramsey readout regime so the verification harness truly tests
+# the same physical window/tone/threshold scaling as the Ramsey acquisition.
+modified_ramsey_base_config = dict(config)
 
 #### update the qubit and cavity attenuation
 # cavityAtten.SetAttenuation(config["cav_Atten"], printOut=True)
@@ -2037,6 +2207,7 @@ if RunModifiedRamsey:
             "symmetric_drive_freq": ModifiedRamsey_params.get(
                 "symmetric_drive_freq", None
             ),
+            "mr_relax_delay": ModifiedRamsey_params.get("mr_relax_delay", 0.0),
             "sigma": qubit_sigma,
             "flattop_length": qubit_flattop,
             "reps": ModifiedRamsey_params["mr_reps"],
@@ -2052,6 +2223,9 @@ if RunModifiedRamsey:
             mr_use_active_reset,
             mr_reset_from_readout,
         )
+        mr_cfg["modified_ramsey_timing"] = modified_ramsey_timing(
+            soccfg, config | mr_cfg
+        )
         config_mr = config | mr_cfg
 
         run_tag_cont = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -2064,7 +2238,9 @@ if RunModifiedRamsey:
             f"  duration="
             f"{'unbounded' if cont_duration_s is None else f'{cont_duration_s} s'}, "
             f"ss_cal every {ss_recalib_interval_s} s, "
-            f"snippet every {snippet_interval_s} s"
+            f"snippet every {snippet_interval_s} s\n"
+            f"  scheduled cadence="
+            f"{config_mr['modified_ramsey_timing']['scheduled_rep_period_us']:.6f} us/shot"
         )
 
         run_start_cont = time.time()
@@ -2137,6 +2313,20 @@ if RunModifiedRamsey:
                     chosen_probe_freq=np.array(chosen_probe_freq_cont),
                     peak_sep=np.array(chosen_peak_sep_cont),
                     tau_us=np.array(tau_us_cont),
+                    scheduled_rep_period_us=np.array(
+                        config_mr["modified_ramsey_timing"]["scheduled_rep_period_us"]
+                    ),
+                    scheduled_timing=np.array(
+                        config_mr["modified_ramsey_timing"], dtype=object
+                    ),
+                    streamer_elapsed_s=np.array(
+                        data_mr["data"].get("streamer_elapsed_s", np.nan)
+                    ),
+                    streamer_average_rep_period_us=np.array(
+                        data_mr["data"].get(
+                            "streamer_average_rep_period_us", np.nan
+                        )
+                    ),
                     final_voltage=np.array(current_voltage_mr),
                     chunk_idx=np.array(chunk_idx_cont),
                     t_since_start_s=np.array(t_since_start),
@@ -2430,6 +2620,7 @@ if RunModifiedRamsey:
             "symmetric_drive_freq": ModifiedRamsey_params.get(
                 "symmetric_drive_freq", None
             ),
+            "mr_relax_delay": ModifiedRamsey_params.get("mr_relax_delay", 0.0),
             "sigma": qubit_sigma,
             "flattop_length": qubit_flattop,
             "reps": ModifiedRamsey_params["mr_reps"],
@@ -2450,6 +2641,10 @@ if RunModifiedRamsey:
             ModifiedRamsey_params,
             mr_use_active_reset,
             mr_reset_from_readout,
+        )
+
+        mr_cfg["modified_ramsey_timing"] = modified_ramsey_timing(
+            soccfg, config | mr_cfg
         )
 
         config_mr = config | mr_cfg
@@ -2494,14 +2689,8 @@ if RunModifiedRamsey:
         c0_mr = apriori_sep_mr["g_center"]
         c1_mr = apriori_sep_mr["e_center"]
 
-        pulse_length_us = qubit_sigma * 4
-        n_qubit_pulses_mr = 3 if config_mr.get("use_pi_pulse", False) else 2
-        rep_period_us = (
-            n_qubit_pulses_mr * pulse_length_us
-            + tau_us_mr
-            + 0.05
-            + config_mr["readout_length"]
-        )
+        timing_mr = config_mr["modified_ramsey_timing"]
+        rep_period_us = timing_mr["scheduled_rep_period_us"]
 
         elapsed_ms_mr = np.arange(len(raw_i_mr)) * rep_period_us * 1e-3
         elapsed_avg_ms_mr = (
@@ -2615,6 +2804,14 @@ if RunModifiedRamsey:
             tau_us=np.array(tau_us_mr),
             final_voltage=np.array(current_voltage_mr),
             cycle_idx=np.array(cycle_idx_mr),
+            scheduled_rep_period_us=np.array(rep_period_us),
+            scheduled_timing=np.array(timing_mr, dtype=object),
+            streamer_elapsed_s=np.array(
+                data_mr["data"].get("streamer_elapsed_s", np.nan)
+            ),
+            streamer_average_rep_period_us=np.array(
+                data_mr["data"].get("streamer_average_rep_period_us", np.nan)
+            ),
             config=np.array(config_mr, dtype=object),
         )
 
@@ -2629,6 +2826,10 @@ if RunModifiedRamsey:
                 "chosen_probe_freq": chosen_probe_freq_mr,
                 "peak_sep": chosen_peak_sep_mr,
                 "tau_us": tau_us_mr,
+                "scheduled_rep_period_us": rep_period_us,
+                "streamer_average_rep_period_us": data_mr["data"].get(
+                    "streamer_average_rep_period_us", np.nan
+                ),
             }
         )
 
@@ -2787,6 +2988,7 @@ if RunModifiedRamseyCalib:
     mean_excited_cal = np.full((n_drive_cal, n_tau_cal), np.nan)
     mean_i_cal = np.full((n_drive_cal, n_tau_cal), np.nan)
     mean_q_cal = np.full((n_drive_cal, n_tau_cal), np.nan)
+    rep_period_us_all_cal = np.full((n_drive_cal, n_tau_cal), np.nan)
     # Averaged excited-population time traces + matching time axes per (drive,tau).
     excited_avg_all_cal = [[None] * n_tau_cal for _ in range(n_drive_cal)]
     elapsed_avg_ms_all_cal = [[None] * n_tau_cal for _ in range(n_drive_cal)]
@@ -2827,6 +3029,7 @@ if RunModifiedRamseyCalib:
                 "symmetric_drive_freq": (
                     None if drive_i_cal is None else float(drive_i_cal)
                 ),
+                "mr_relax_delay": ModifiedRamsey_params.get("mr_relax_delay", 0.0),
                 "sigma": qubit_sigma,
                 "flattop_length": qubit_flattop,
                 "reps": mr_reps_cal,
@@ -2841,6 +3044,9 @@ if RunModifiedRamseyCalib:
                 ModifiedRamsey_params,
                 mrcal_use_active_reset,
                 mrcal_reset_from_readout,
+            )
+            mr_cfg["modified_ramsey_timing"] = modified_ramsey_timing(
+                soccfg, config | mr_cfg
             )
             config_cal = config | mr_cfg
 
@@ -2875,14 +3081,10 @@ if RunModifiedRamseyCalib:
             # ModifiedRamsey per-cycle "_averaged_population" output): block-average
             # consecutive shots in groups of average_n_shots and lay them on a time
             # axis built from the per-rep period (tau-dependent).
-            pulse_length_us_cal = qubit_sigma * 4
-            n_qubit_pulses_cal = 3 if config_cal.get("use_pi_pulse", False) else 2
-            rep_period_us_cal = (
-                n_qubit_pulses_cal * pulse_length_us_cal
-                + tau_i_cal
-                + 0.05
-                + config_cal["readout_length"]
-            )
+            rep_period_us_cal = config_cal["modified_ramsey_timing"][
+                "scheduled_rep_period_us"
+            ]
+            rep_period_us_all_cal[i_drive_cal, i_tau_cal] = rep_period_us_cal
             elapsed_avg_ms_cal = (
                 np.arange(len(excited_avg_cal))
                 * average_n_shots_cal
@@ -3062,6 +3264,7 @@ if RunModifiedRamseyCalib:
         mean_q=np.array(mean_q_cal),
         excited_avg_all=np.array(excited_avg_all_cal, dtype=object),
         elapsed_avg_ms_all=np.array(elapsed_avg_ms_all_cal, dtype=object),
+        scheduled_rep_period_us=np.array(rep_period_us_all_cal),
         f_ge=np.array(f_ge_cal),
         voltage=np.array(current_voltage_cal),
         mr_reps=np.array(mr_reps_cal),
@@ -3165,6 +3368,9 @@ if RunModifiedRamsey_Control:
                 "f_ge": f_ge_mrc,
                 "df": cd_max_mhz_mrc,
                 "pi2_gain": pi2_gain,
+                "mr_relax_delay": ModifiedRamsey_Control_params.get(
+                    "mr_relax_delay", 0.0
+                ),
                 "sigma": qubit_sigma,
                 "flattop_length": qubit_flattop,
                 "reps": ModifiedRamsey_Control_params["mr_reps"],
@@ -3172,6 +3378,9 @@ if RunModifiedRamsey_Control:
                 "current_voltage": current_voltage_mrc,
                 "Qubit_number": Qubit_Readout,
             }
+            mr_cfg_mrc["modified_ramsey_timing"] = modified_ramsey_timing(
+                soccfg, config | mr_cfg_mrc
+            )
             config_mrc = config | mr_cfg_mrc
 
             Instance_mrc = ModifiedRamsey(
@@ -3211,10 +3420,9 @@ if RunModifiedRamsey_Control:
                 midpoint_mrc = 0.5 * (c0_mrc + c1_mrc)
                 scores_mrc = (iq_mrc - midpoint_mrc) @ normal_mrc
 
-            pulse_length_us_mrc = qubit_sigma * 4
-            rep_period_us_mrc = (
-                2 * pulse_length_us_mrc + tau_mrc + 0.05 + config_mrc["readout_length"]
-            )
+            rep_period_us_mrc = config_mrc["modified_ramsey_timing"][
+                "scheduled_rep_period_us"
+            ]
             elapsed_ms_mrc = np.arange(len(raw_i_mrc)) * rep_period_us_mrc * 1e-3
 
             timestamp_mrc = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -3433,6 +3641,18 @@ if RunModifiedRamsey_Control:
                 tau_us=np.array(tau_mrc),
                 half_period_v=np.array(half_period_v_mrc),
                 cycle_idx=np.array(cycle_idx_mrc),
+                scheduled_rep_period_us=np.array(rep_period_us_mrc),
+                scheduled_timing=np.array(
+                    config_mrc["modified_ramsey_timing"], dtype=object
+                ),
+                streamer_elapsed_s=np.array(
+                    data_mrc["data"].get("streamer_elapsed_s", np.nan)
+                ),
+                streamer_average_rep_period_us=np.array(
+                    data_mrc["data"].get(
+                        "streamer_average_rep_period_us", np.nan
+                    )
+                ),
                 hysteresis_low=np.array(low_thresh_mrc),
                 hysteresis_high=np.array(high_thresh_mrc),
                 moving_avg_window_n=np.array(window_n_mrc),
@@ -3452,6 +3672,7 @@ if RunModifiedRamsey_Control:
                     "sweet_verified": True,
                     "f_ge": f_ge_mrc,
                     "tau_us": tau_mrc,
+                    "scheduled_rep_period_us": rep_period_us_mrc,
                 }
             )
 
@@ -4269,12 +4490,10 @@ UpdateConfig = {
     ###### cavity
     # "pulse_freq": resonator_frequency_center,  # [MHz] actual frequency is this number + "cavity_LO"
     "read_pulse_style": "const",  # --Fixed
-    # Drive BOTH the ADC integration window ("readout_length") and the resonator
-    # readout tone duration ("length") from SS_params["Readout_Time"]. Previously
-    # "length" was not set here, so it fell back to BaseConfig ("length": 30) and
-    # the readout tone ignored Readout_Time.
+    # Match the active-reset calibration window and keep the resonator on from
+    # tone start through ADC offset + the complete integration window.
     "readout_length": SS_params["Readout_Time"],  # us – ADC integration window
-    "length": SS_params["Readout_Time"],  # us – resonator readout tone duration
+    "length": SS_params["ADC_Offset"] + SS_params["Readout_Time"],
     "adc_trig_offset": SS_params["ADC_Offset"],
     "pi2_SS": SS_params["pi2_SS"],
     # "pulse_gain": cavity_gain, # [DAC units]
@@ -4745,10 +4964,13 @@ if RunActiveResetVerify:
     arv_dir = os.path.join(outerFolder, "ActiveResetVerify")
     os.makedirs(arv_dir, exist_ok=True)
 
-    # 1) Calibrate readout phase + I-threshold (rotates config["res_phase"] so
+    arv_config = dict(modified_ramsey_base_config)
+
+    # 1) Calibrate readout phase + I-threshold in the Modified-Ramsey readout
+    #    regime (rotates arv_config["res_phase"] so
     #    |g>/|e> separate along I, and measures the threshold off the rotated blobs).
     arv_calib = calibrate_active_reset_readout(
-        config=config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
+        config=arv_config, soc=soc, soccfg=soccfg, outerFolder=outerFolder
     )
 
     # 2) Base config shared by all four conditions. g_center/e_center are in the
@@ -4793,7 +5015,7 @@ if RunActiveResetVerify:
     for arv_label, arv_prep, arv_reset, arv_force in arv_conditions:
         print(f"\n[ActiveResetVerify] Condition: {arv_label}")
         cfg_arv = (
-            config
+            arv_config
             | arv_base_cfg
             | {
                 "prep_excited": arv_prep,

@@ -64,6 +64,15 @@ class CondjProbeProgram(AveragerProgram):
     def initialize(self):
         cfg = self.cfg
         cfg["reps"] = int(cfg.get("shots", cfg.get("reps", 200)))
+        if not cfg["ro_chs"]:
+            raise ValueError("cfg['ro_chs'] must contain at least one readout channel")
+        required_tone_us = cfg["adc_trig_offset"] + cfg["readout_length"]
+        if cfg["length"] < required_tone_us:
+            raise ValueError(
+                "cfg['length'] must cover cfg['adc_trig_offset'] + "
+                f"cfg['readout_length'] ({cfg['length']} us < "
+                f"{required_tone_us} us)"
+            )
 
         # Free scratch registers on page 0 for the comparison operands.
         # (page-0 regs 13/14/15 = loop counters, 31 = trigger time; 6/7 are free.)
@@ -71,10 +80,32 @@ class CondjProbeProgram(AveragerProgram):
         self.r_b = 7
 
         self.declare_gen(ch=cfg["res_ch"], nqz=cfg["nqz"])
+        self.adc_trig_offset_cycles = self.us2cycles(cfg["adc_trig_offset"])
+        self.readout_window_cycles = {
+            ch: self.us2cycles(cfg["readout_length"], ro_ch=ch)
+            for ch in cfg["ro_chs"]
+        }
+        requested_tone_cycles = self.us2cycles(
+            cfg["length"], gen_ch=cfg["res_ch"]
+        )
+        f_time = self.soccfg["tprocs"][0]["f_time"]
+        res_f_fabric = self.soccfg["gens"][cfg["res_ch"]]["f_fabric"]
+        adc_end_tproc = max(
+            self.adc_trig_offset_cycles
+            + self.readout_window_cycles[ch]
+            * f_time / self.soccfg["readouts"][ch]["f_output"]
+            for ch in cfg["ro_chs"]
+        )
+        required_tone_cycles = int(np.ceil(
+            adc_end_tproc * res_f_fabric / f_time - 1e-12
+        ))
+        self.readout_tone_cycles = max(
+            requested_tone_cycles, required_tone_cycles
+        )
         for ch in cfg["ro_chs"]:
             self.declare_readout(
                 ch=ch,
-                length=self.us2cycles(cfg["readout_length"]),
+                length=self.readout_window_cycles[ch],
                 freq=cfg["pulse_freq"],
                 gen_ch=cfg["res_ch"],
             )
@@ -88,7 +119,7 @@ class CondjProbeProgram(AveragerProgram):
             freq=f_res,
             phase=cfg["res_phase"],
             gain=cfg["pulse_gain"],
-            length=self.us2cycles(cfg["length"]),
+            length=self.readout_tone_cycles,
         )
         self.sync_all(self.us2cycles(0.2))
 
@@ -102,7 +133,7 @@ class CondjProbeProgram(AveragerProgram):
         # Trigger the ADC unconditionally so a readout window always exists.
         self.trigger(
             adcs=self.ro_chs,
-            adc_trig_offset=self.us2cycles(cfg["adc_trig_offset"]),
+            adc_trig_offset=self.adc_trig_offset_cycles,
         )
 
         # condj jumps to NOPULSE_DONE if the firmware treats "a op b" as a jump.
@@ -117,7 +148,8 @@ class CondjProbeProgram(AveragerProgram):
 
     def acquire(self, soc, **kwargs):
         super().acquire(soc, readouts_per_experiment=1, load_pulses=True, **kwargs)
-        norm = self.us2cycles(self.cfg["readout_length"], ro_ch=0)
+        ro_ch = self.cfg["ro_chs"][0]
+        norm = self.us2cycles(self.cfg["readout_length"], ro_ch=ro_ch)
         i = self.di_buf[0][: self.cfg["reps"]] / norm
         q = self.dq_buf[0][: self.cfg["reps"]] / norm
         return float(np.mean(np.abs(i + 1j * q)))
@@ -242,7 +274,7 @@ if __name__ == "__main__":
         "nqz": 2,  # <-- resonator Nyquist zone
         "ro_chs": [0],  # <-- readout ADC channel(s)
         "readout_length": 5.0,  # us  <-- your readout window
-        "length": 5.0,  # us  <-- resonator const-pulse length
+        "length": 6.0,  # us  <-- ADC offset + complete readout window
         "pulse_freq": 6673.27,  # MHz <-- MUST be on-resonance (resonator_frequency_center)
         "pulse_gain": 2500,  # DAC gain (cavity_gain) -- must drive the resonator
         "res_phase": 0,  # reg units (any value is fine for this logic test)
